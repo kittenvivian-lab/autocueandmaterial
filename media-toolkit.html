@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>媒體工具箱 | Media Cue &amp; 素材規範產生器</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2b33;
+    --paper:#f6f4ee;
+    --line:#d8d2c2;
+    --accent:#2f6f5e;
+    --accent-soft:#e4efe9;
+    --warn:#b5542a;
+    --muted:#6b6455;
+    --card:#ffffff;
+    font-family:-apple-system,"PingFang TC","Microsoft JhengHei",Segoe UI,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);}
+  header{padding:20px 28px 0;}
+  h1{font-size:20px;margin:0 0 2px;letter-spacing:.2px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  nav{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 28px;flex-wrap:wrap;}
+  nav button{
+    background:none;border:none;padding:10px 16px;font-size:14px;color:var(--muted);
+    cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;
+  }
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  main{padding:22px 28px 60px;max-width:1180px;margin:0 auto;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
+  .card h2{font-size:15px;margin:0 0 12px;}
+  .card h3{font-size:13px;margin:14px 0 8px;color:var(--muted);}
+  label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px;}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
+    font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink);
+  }
+  textarea{resize:vertical;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:140px;}
+  button.btn{
+    background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;
+    font-size:13.5px;cursor:pointer;font-family:inherit;
+  }
+  button.btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  button.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line);}
+  button.btn.small{padding:4px 10px;font-size:12px;}
+  button.btn:disabled{opacity:.5;cursor:not-allowed;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top;}
+  th{color:var(--muted);font-weight:600;font-size:12px;background:#faf9f5;}
+  tr:hover td{background:#fbfaf6;}
+  .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:1px 8px;
+    border-radius:10px;font-size:11.5px;margin-right:4px;}
+  .status{font-size:12.5px;padding:8px 12px;border-radius:6px;margin-bottom:14px;}
+  .status.ok{background:#e4efe9;color:var(--accent);}
+  .status.bad{background:#fbe9e2;color:var(--warn);}
+  .status.info{background:#eef1f5;color:#41586b;}
+  .group-title{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--ink);
+    border-left:3px solid var(--accent);padding-left:8px;}
+  .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .checklist-item input[type=checkbox]{margin-top:4px;}
+  .checklist-item .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .inline-fields{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  .inline-fields > div{width:120px;}
+  .pill-rate{font-size:11.5px;padding:2px 7px;border-radius:8px;background:#fff2e4;color:var(--warn);}
+  .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
+  .footer-note{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.6;}
+  .totalbar{display:flex;justify-content:space-between;align-items:center;background:var(--accent-soft);
+    padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13.5px;}
+  .totalbar b{font-size:16px;color:var(--accent);}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<header>
+  <h1>媒體工具箱</h1>
+  <div class="sub">Media Cue 產生器 ＋ 素材規範產生器 — 獨立工具，資料存於你自己的 Firebase 專案</div>
+</header>
+<nav>
+  <button data-tab="setup" class="active">① Firebase 連線設定</button>
+  <button data-tab="rates">② 客戶與 AC% 費率</button>
+  <button data-tab="mediacue">③ Media Cue 產生器</button>
+  <button data-tab="specs">④ 素材規範產生器</button>
+  <button data-tab="specslib">⑤ 規範庫管理</button>
+</nav>
+<main>
+
+  <!-- ============ SETUP ============ -->
+  <div class="panel active" id="panel-setup">
+    <div class="card">
+      <h2>Step 1・連接你自己的 Firebase 專案</h2>
+      <p class="sub" style="margin-top:-6px">
+        這個工具的資料（客戶清單、AC%費率、媒體元件庫、素材規範庫）都存在你自己申請的 Firebase 專案裡，跟 Planner OS 完全分開。
+        第一次使用請到 <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> 建立新專案 → 啟用 Firestore Database →
+        專案設定裡取得「Web App 設定」，把整段 config 貼在下面。設定會存在瀏覽器本機（localStorage），下次開啟不用重貼。
+      </p>
+      <label>貼上 Firebase config（物件格式，例如 { "apiKey": "...", "projectId": "...", ... }）</label>
+      <textarea id="fbConfigInput" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px;">
+        <button class="btn" id="btnConnect">連接 Firebase</button>
+        <button class="btn ghost" id="btnClearConfig">清除本機設定</button>
+      </div>
+      <div id="connectStatus" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Step 2・匯入起始資料</h2>
+      <p class="sub" style="margin-top:-6px">
+        已經根據你上傳的 Alinamin EXG 0727 New HCP 檔案整理了一份起始資料：<b>35 筆媒體元件</b>、<b>28 筆客戶-媒體 AC% 對照</b>、<b>21 筆素材規範</b>。
+        按下方按鈕即可寫入你的 Firebase（只會在對應集合是空的時候才寫入，不會覆蓋掉你之後新增的內容）。
+      </p>
+      <button class="btn secondary" id="btnSeed" disabled>匯入起始資料</button>
+      <span id="seedStatus" style="margin-left:10px;font-size:12.5px;color:var(--muted);"></span>
+    </div>
+  </div>
+
+  <!-- ============ RATES ============ -->
+  <div class="panel" id="panel-rates">
+    <div class="card">
+      <h2>客戶清單</h2>
+      <div class="row">
+        <div><label>新增客戶名稱</label><input type="text" id="newClientName" placeholder="例如：Alinamin EXG"></div>
+        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnAddClient">新增客戶</button></div>
+      </div>
+      <table style="margin-top:12px;">
+        <thead><tr><th>客戶</th><th style="width:80px;">操作</th></tr></thead>
+        <tbody id="clientTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>客戶 × 媒體 AC% 對照</h2>
+      <p class="sub" style="margin-top:-6px">同一個媒體，不同客戶收的 AC% 可能不一樣。這裡是唯一需要維護 AC% 的地方，Media Cue 產生器會自動從這裡帶入。</p>
+      <div class="row">
+        <div>
+          <label>選擇客戶</label>
+          <select id="rateClientSelect"></select>
+        </div>
+      </div>
+      <table style="margin-top:12px;">
+        <thead><tr><th>媒體元件</th><th style="width:120px;">AC%</th><th style="width:80px;">操作</th></tr></thead>
+        <tbody id="rateTableBody"></tbody>
+      </table>
+      <h3>新增／更新單筆費率</h3>
+      <div class="row">
+        <div>
+          <label>媒體元件</label>
+          <select id="rateMediaSelect"></select>
+        </div>
+        <div><label>AC%（輸入數字，例如 4 代表 4%）</label><input type="number" id="rateValueInput" step="0.1"></div>
+        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnSaveRate">儲存費率</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MEDIA CUE GENERATOR ============ -->
+  <div class="panel" id="panel-mediacue">
+    <div class="card">
+      <h2>Campaign 基本資訊</h2>
+      <div class="row">
+        <div><label>Agency</label><input type="text" id="mcAgency" value="Starcom"></div>
+        <div><label>客戶 / Campaign Owner</label><select id="mcClient"></select></div>
+        <div><label>Campaign 名稱</label><input type="text" id="mcCampaignName" placeholder="例如：Alinamin EXG 0727 New HCP"></div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div><label>開始日期</label><input type="date" id="mcStartDate"></div>
+        <div><label>結束日期</label><input type="date" id="mcEndDate"></div>
+        <div><label>Campaign Owner 姓名</label><input type="text" id="mcOwner"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>選擇這次要用的媒體元件</h2>
+      <p class="sub" style="margin-top:-6px">勾選後會自動帶出對應的 AC%（依你剛選的客戶）與需要的 KPI 欄位，你只要填金額。</p>
+      <div id="mediaChecklist"><div class="empty">請先在①連接 Firebase 並匯入資料</div></div>
+    </div>
+
+    <div class="card">
+      <h2>已選媒體 — 填入金額</h2>
+      <div id="selectedMediaRows"><div class="empty">尚未勾選任何媒體元件</div></div>
+      <div class="totalbar">
+        <span>Total Budget 合計（含 AC）</span>
+        <b id="mcGrandTotal">NT$ 0</b>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnExportMediaCue">匯出 Media Cue（.xlsx）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SPEC GENERATOR ============ -->
+  <div class="panel" id="panel-specs">
+    <div class="card">
+      <h2>Campaign 名稱</h2>
+      <input type="text" id="specCampaignName" placeholder="例如：Alinamin EXG 0727 New HCP">
+    </div>
+    <div class="card">
+      <h2>勾選這次案子會用到的版位／規範</h2>
+      <p class="sub" style="margin-top:-6px">規範庫是平台通用的（不分客戶），勾選後直接組成新的素材規範表，不用再翻舊檔案找。</p>
+      <div id="specChecklist"><div class="empty">請先在①連接 Firebase 並匯入資料</div></div>
+      <div style="margin-top:14px;">
+        <button class="btn" id="btnExportSpecs">匯出素材規範表（.xlsx）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SPEC LIBRARY MANAGEMENT ============ -->
+  <div class="panel" id="panel-specslib">
+    <div class="card">
+      <h2>新增／編輯規範條目</h2>
+      <div class="row">
+        <div><label>平台</label><input type="text" id="specPlatform" placeholder="例如：Meta"></div>
+        <div><label>廣告形式／版位</label><input type="text" id="specFormat" placeholder="例如：Newsfeed-影片"></div>
+        <div><label>欄位</label><input type="text" id="specField" placeholder="例如：素材規範"></div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div style="flex:2;"><label>規範內容</label><textarea id="specContent" rows="2"></textarea></div>
+        <div style="flex:2;"><label>注意事項</label><textarea id="specNotes" rows="2"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div><label>官方來源連結</label><input type="text" id="specSourceUrl" placeholder="https://..."></div>
+        <div><label>最後確認日期</label><input type="date" id="specLastVerified"></div>
+        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnSaveSpec">儲存規範</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>規範庫總覽</h2>
+      <div id="specLibTable"><div class="empty">尚未連接資料</div></div>
+    </div>
+  </div>
+
+</main>
+<div class="footer-note">
+  媒體工具箱・獨立工具，與 Planner OS 分開維運。資料存放於你自己的 Firebase 專案（Firestore），可隨時在 Firebase Console 檢視或匯出備份。
+</div>
+<script>
+const SEED_MEDIA_COMPONENTS = [{"id": "mc_9", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": "TV+MOD", "position": "Terr. + Cable", "adFormat": "Video", "buyingModel": "CPRP", "unitPriceDefault": 1240, "materialNote": "New HCP 25\"", "kpiFieldsNeeded": ["Est.Reach"], "label": "TV+MOD / Terr. + Cable"}, {"id": "mc_10", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "快線傳輸", "adFormat": "-", "buyingModel": "支", "unitPriceDefault": 20000, "materialNote": "=I9", "kpiFieldsNeeded": [], "label": "快線傳輸"}, {"id": "mc_11", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": "APEX Guarantee-YouTube", "position": "VRC 2.0 (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 80, "materialNote": "New HCP 25\"\n(橫+直)", "kpiFieldsNeeded": ["Est.Imp"], "label": "APEX Guarantee-YouTube / VRC 2.0 (PC / MB / CTV)"}, {"id": "mc_13", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 180, "materialNote": "New HCP 25\"\n(橫)", "kpiFieldsNeeded": ["Est.Imp"], "label": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)"}, {"id": "mc_15", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "6s Bumper (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 90, "materialNote": "New HCP 6\"\n(橫)", "kpiFieldsNeeded": ["Est.Imp"], "label": "6s Bumper (PC / MB / CTV)"}, {"id": "mc_17", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "中天新聞\nYouTube頻道", "position": "YT新聞職播資訊卡", "adFormat": "Video\nText", "buyingModel": "CPRP", "unitPriceDefault": 4500, "materialNote": "New HCP 25\"\nText", "kpiFieldsNeeded": ["Est.Views"], "label": "中天新聞 YouTube頻道 / YT新聞職播資訊卡"}, {"id": "mc_18", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "APEX Guarantee-\nFacebook+Instagram", "position": "R&F Newsfeed/Instream/Reels/Story (PC+MB)", "adFormat": "Video Post", "buyingModel": "CPM", "unitPriceDefault": 69, "materialNote": "New HCP 25\"", "kpiFieldsNeeded": ["Est.Reach", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- Facebook+Instagram / R&F Newsfeed/Instream/Reels/Story (PC+MB)"}, {"id": "mc_19", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "LINE Today", "position": "Billboard Video", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": null, "materialNote": "=I18", "kpiFieldsNeeded": ["Est.Imp"], "label": "LINE Today / Billboard Video"}, {"id": "mc_20", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": null, "position": "Scroller Sticky", "adFormat": "Banner", "buyingModel": "CPM", "unitPriceDefault": null, "materialNote": "KV Banner", "kpiFieldsNeeded": ["Est.Imp"], "label": "Scroller Sticky"}, {"id": "mc_21", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": "捷運", "position": "臺大醫院站", "adFormat": "月台貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "捷運 / 臺大醫院站"}, {"id": "mc_22", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "石牌站", "adFormat": "燈箱", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "石牌站"}, {"id": "mc_23", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "雙連站", "adFormat": "燈箱", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "雙連站"}, {"id": "mc_24", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": "公車", "position": "北部公車-大都會", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "公車 / 北部公車-大都會"}, {"id": "mc_25", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "北部公車-民營", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "北部公車-民營"}, {"id": "mc_26", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "台中公車", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "台中公車"}, {"id": "mc_27", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "高雄公車", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "高雄公車"}, {"id": "mc_28", "objective": "廣度覆蓋 日常滲透", "media": "PDOOH", "title": "全民健康視", "position": "診所/臺大醫院北護分院", "adFormat": "Video", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "=I19", "kpiFieldsNeeded": ["Est.Imp"], "label": "全民健康視 / 診所/臺大醫院北護分院"}, {"id": "mc_29", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-\nFacebook+Instagram", "position": "Newsfeed/Instream/Reels/Story (PC+MB)", "adFormat": "Video Post", "buyingModel": "CPLC", "unitPriceDefault": 12, "materialNote": "=I18", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- Facebook+Instagram / Newsfeed/Instream/Reels/Story (PC+MB)"}, {"id": "mc_31", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": "KOL Post", "buyingModel": "CPM", "unitPriceDefault": 65, "materialNote": "KOL內容擴散\n⼩花藥師", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row31"}, {"id": "mc_32", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": null, "buyingModel": "CPM", "unitPriceDefault": 65, "materialNote": "KOL內容擴散\n志明⼤叔", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row32"}, {"id": "mc_33", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-\nLINE LAP", "position": "LINE Ad Plateform", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 35, "materialNote": "=I29", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- LINE LAP / LINE Ad Plateform"}, {"id": "mc_34", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "CPC", "unitPriceDefault": 7, "materialNote": "=I20", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row34"}, {"id": "mc_35", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-Google RDA", "position": "Google Display Network", "adFormat": "Banner", "buyingModel": "CPC", "unitPriceDefault": 3.5, "materialNote": "New HCP 25\"\nBanner", "kpiFieldsNeeded": ["Est.Clicks"], "label": "APEX Guarantee-Google RDA / Google Display Network"}, {"id": "mc_36", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "串接Google Trend訊號", "position": "-", "adFormat": "-", "buyingModel": "次", "unitPriceDefault": 50000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "串接Google Trend訊號 / -"}, {"id": "mc_37", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-Publicis ID", "position": "電信數據", "adFormat": "-", "buyingModel": "次", "unitPriceDefault": 180000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "APEX Guarantee-Publicis ID / 電信數據"}, {"id": "mc_38", "objective": "深植專業信賴", "media": "Digital", "title": "早安健康", "position": "早安健康官網", "adFormat": "廣編", "buyingModel": "篇", "unitPriceDefault": 150000, "materialNote": "-", "kpiFieldsNeeded": ["Est.Views"], "label": "早安健康 / 早安健康官網"}, {"id": "mc_39", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": ["Est.Imp"], "label": "row39"}, {"id": "mc_40", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "早安健康手機版", "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": 234000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "早安健康手機版"}, {"id": "mc_41", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": [], "label": "row41"}, {"id": "mc_42", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "LINE Today健康", "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": [], "label": "LINE Today健康"}, {"id": "mc_43", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "早安健康IG", "adFormat": "Photo Post", "buyingModel": "篇", "unitPriceDefault": 50000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "早安健康IG"}, {"id": "mc_44", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "新聞廣編聯播", "adFormat": "-", "buyingModel": "間", "unitPriceDefault": 30000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "新聞廣編聯播"}, {"id": "mc_45", "objective": "深植專業信賴", "media": "Digital", "title": "JAG", "position": "LINE Viral", "adFormat": "Photo+Text", "buyingModel": "CPS", "unitPriceDefault": 48, "materialNote": "早安健康圖+廣編連結", "kpiFieldsNeeded": ["Est.Imp"], "label": "JAG / LINE Viral"}, {"id": "mc_46", "objective": "深植專業信賴", "media": "Digital", "title": "亞洲指標", "position": "小花藥師花逸修", "adFormat": "Video", "buyingModel": "Packge", "unitPriceDefault": 150000, "materialNote": "IG\nVideo", "kpiFieldsNeeded": [], "label": "亞洲指標 / 小花藥師花逸修"}, {"id": "mc_47", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "志明大叔活力Go", "adFormat": "Video", "buyingModel": "Packge", "unitPriceDefault": 225000, "materialNote": "FB\nVideo", "kpiFieldsNeeded": [], "label": "志明大叔活力Go"}];
+const SEED_CLIENT_RATES = [{"client": "Alinamin EXG", "mediaComponentId": "mc_9", "label": "TV+MOD / Terr. + Cable", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_10", "label": "快線傳輸", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_11", "label": "APEX Guarantee-YouTube / VRC 2.0 (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_13", "label": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_15", "label": "6s Bumper (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_17", "label": "中天新聞 YouTube頻道 / YT新聞職播資訊卡", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_18", "label": "APEX Guarantee- Facebook+Instagram / R&F Newsfeed/Instream/Reels/Story (PC+MB)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_19", "label": "LINE Today / Billboard Video", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_20", "label": "Scroller Sticky", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_21", "label": "捷運 / 臺大醫院站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_22", "label": "石牌站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_23", "label": "雙連站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_24", "label": "公車 / 北部公車-大都會", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_25", "label": "北部公車-民營", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_26", "label": "台中公車", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_27", "label": "高雄公車", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_29", "label": "APEX Guarantee- Facebook+Instagram / Newsfeed/Instream/Reels/Story (PC+MB)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_31", "label": "row31", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_32", "label": "row32", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_33", "label": "APEX Guarantee- LINE LAP / LINE Ad Plateform", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_34", "label": "row34", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_35", "label": "APEX Guarantee-Google RDA / Google Display Network", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_36", "label": "串接Google Trend訊號 / -", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_37", "label": "APEX Guarantee-Publicis ID / 電信數據", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_38", "label": "早安健康 / 早安健康官網", "acRatePercent": 10}, {"client": "Alinamin EXG", "mediaComponentId": "mc_45", "label": "JAG / LINE Viral", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_46", "label": "亞洲指標 / 小花藥師花逸修", "acRatePercent": 10}, {"client": "Alinamin EXG", "mediaComponentId": "mc_47", "label": "志明大叔活力Go", "acRatePercent": 10}];
+const SEED_CREATIVE_SPECS = [{"id": "cs_tv_video", "platform": "TV/廣告快線", "adFormat": "TVC影片", "field": "影像格式(HD)", "content": "Format: Apple ProRes 422 或 Uncompressed AVI；Width 1920px, Height 1080px, Aspect 16:9 NTSC(1.0)，Frame rate 29.970fps 或 59.94fps，Field type: Progressive", "notes": "上線前一週上傳至廣告快線 ftp://ftp.tvcxpress.com.tw", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_tv_audio", "platform": "TV/廣告快線", "adFormat": "TVC影片", "field": "聲音格式", "content": "Format: PCM，Channel: 2 channels(Stereo)，Sampling rate: 48.0KHz，Bit depth: 16 bits，Volume: -10DB", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_trueview", "platform": "YouTube (APEX)", "adFormat": "TrueView / In-Stream", "field": "影片規範", "content": "可略過影片廣告，觀眾可於5秒後選擇略過；素材長度須至少12秒才能計入觀看次數；長度上限6分鐘", "notes": "直式與橫式影片可分別設定文案，直式露出於Trueview外的Shorts/動態內廣告，橫式露出於Trueview/動態內廣告", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_url", "platform": "YouTube (APEX)", "adFormat": "通用", "field": "到達網址/顯示網址", "content": "最終到達網址：使用者點擊後前往的頁面，須與廣告宣傳內容一致；顯示網址：須與到達網址網域一致", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_cta", "platform": "YouTube (APEX)", "adFormat": "通用", "field": "行動號召按鈕(選用)", "content": "行動號召文字最長10個半形字元(5個中文字)", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_shorts", "platform": "YouTube (APEX)", "adFormat": "Shorts", "field": "文案規範", "content": "行動號召最長10個半形字元(5個中文字)；廣告標題最長15個半形字元(7個中文字)，單行顯示", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_banner", "platform": "YouTube (APEX)", "adFormat": "隨播橫幅廣告(選用)", "field": "尺寸規範", "content": "尺寸300x60像素，檔案大小上限150KB", "notes": "建議使用系統自動產生的圖片", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_zt_card", "platform": "中天資訊卡", "adFormat": "新聞跑馬燈", "field": "文案字數", "content": "20字內(含標點)，1組/天，整點新聞段每小時至少跑3次；遇重大新聞事件視狀況調整", "notes": "字數以 LENB 公式計算", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_zt_chat", "platform": "中天資訊卡", "adFormat": "置頂聊天室", "field": "文案字數", "content": "文案字數不限，清楚扼要即可", "notes": "需另提供短連結", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_newsfeed_single", "platform": "Meta", "adFormat": "Newsfeed(Post AD)-單圖", "field": "文案", "content": "125個字元，建議重要訊息置於前3行，避免隱藏於「更多」後", "notes": "若選Post AD需協助上稿並提供貼文連結與發布時間", "sourceUrl": "https://www.facebook.com/policies/ads", "lastVerified": ""}, {"id": "cs_meta_newsfeed_single_asset", "platform": "Meta", "adFormat": "Newsfeed(Post AD)-單圖", "field": "素材規範", "content": "檔案類型JPG/PNG(GIF需轉Video)，大小上限30MB，長寬比1.91:1到4:5，解析度至少1080x1080px", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_video", "platform": "Meta", "adFormat": "Newsfeed-影片", "field": "素材規範", "content": "檔案類型MP4/MOV/GIF，大小上限4GB，長寬比9:16到4:5；FB影片長度上限240分鐘，IG上限60分鐘", "notes": "需提供首圖/首卡截圖，解析度建議至少1080x1080px", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_linkad_cta", "platform": "Meta", "adFormat": "Newsfeed(LinkAD)", "field": "行動呼籲按鈕", "content": "18選1：在相機中試用、了解詳情、立即應徵、立即申請、訂閱、觀看更多、立即註冊、來去逛逛、搶先預約、下載、聯絡我們、取得報價、發送訊息、查看菜單、馬上聽、預約時間、查詢播映時間、發送WhatsApp訊息", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineToday_billboard", "platform": "LINE Today", "adFormat": "Billboard Video", "field": "影片規範", "content": "16:9 HD高畫質，1280x720P以上解析度；影片長度60秒以內；檔案100MB以內，格式MP4", "notes": "進稿需填寫「LINE Today-Billboard Video(必填)」表單", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineToday_scroller", "platform": "LINE Today", "adFormat": "Scroller-Sticky", "field": "素材規範", "content": "KV Banner形式，詳見進稿表單規格", "notes": "進稿需填寫「LINE Today-Scroller(必填)」表單", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_video", "platform": "LINE LAP", "adFormat": "Video", "field": "影片規範", "content": "16:9，寬240-1920px，高135-1080px；格式MP4；檔案<1GB；解析度最高1080p(遞送時最高720p)；位元率最高8Mbps；長度最短5秒", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_banner", "platform": "LINE LAP", "adFormat": "Banner", "field": "尺寸規範", "content": "1200x628px 或 1080x1080px 或 600x400px，JPG/PNG<10MB", "notes": "依版位不同尺寸需求不同", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_copy", "platform": "LINE LAP", "adFormat": "通用", "field": "文案", "content": "標題20字以內；說明75字以內(不限全形半形，空白算字元，不可分段)", "notes": "CTA需從指定選項擇一", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_title", "platform": "Google RDA", "adFormat": "通用", "field": "Title 1-5", "content": "30半形字元，中文15字，不能有驚嘆號", "notes": "字數以 LENB 公式計算", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_longheadline", "platform": "Google RDA", "adFormat": "通用", "field": "Long Headline", "content": "90半形字元，中文45字，不能有驚嘆號", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_desc", "platform": "Google RDA", "adFormat": "通用", "field": "Description 1-4", "content": "90半形字元，中文45字", "notes": "", "sourceUrl": "", "lastVerified": ""}];
+const SEED_CLIENT = "Alinamin EXG";
+</script>
+<script>
+/* ================= State ================= */
+let db = null;
+let firebaseApp = null;
+let CLIENTS = [];
+let CLIENT_RATES = [];   // {id, client, mediaComponentId, acRatePercent}
+let MEDIA_COMPONENTS = [];
+let CREATIVE_SPECS = [];
+let selectedMediaIds = new Set();
+let mediaRowInputs = {}; // id -> {mediaPrice, weeks, unitPrice, qty, rateOverride}
+
+/* ================= Tabs ================= */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ================= Firebase connect ================= */
+function statusBox(el, msg, type){
+  el.innerHTML = '<div class="status '+type+'">'+msg+'</div>';
+}
+
+function tryAutoConnect(){
+  const saved = localStorage.getItem('mediaToolkitFirebaseConfig');
+  if(saved){
+    document.getElementById('fbConfigInput').value = saved;
+    connectFirebase(saved, true);
+  }
+}
+
+document.getElementById('btnConnect').addEventListener('click', ()=>{
+  const raw = document.getElementById('fbConfigInput').value.trim();
+  connectFirebase(raw, false);
+});
+
+document.getElementById('btnClearConfig').addEventListener('click', ()=>{
+  localStorage.removeItem('mediaToolkitFirebaseConfig');
+  document.getElementById('fbConfigInput').value = '';
+  statusBox(document.getElementById('connectStatus'), '已清除本機設定，重新整理頁面後生效。', 'info');
+});
+
+function connectFirebase(raw, silent){
+  const statusEl = document.getElementById('connectStatus');
+  let cfg;
+  try{
+    cfg = JSON.parse(raw);
+  }catch(e){
+    if(!silent) statusBox(statusEl, 'Config 格式錯誤，請確認是合法的 JSON 物件（例如用雙引號包住 key）。', 'bad');
+    return;
+  }
+  try{
+    if(firebaseApp){ firebaseApp.delete().catch(()=>{}); }
+    firebaseApp = firebase.initializeApp(cfg, 'mediaToolkit_' + Date.now());
+    db = firebaseApp.firestore();
+    localStorage.setItem('mediaToolkitFirebaseConfig', raw);
+    statusBox(statusEl, '已連接 Firebase 專案：' + (cfg.projectId || '(未知專案)'), 'ok');
+    document.getElementById('btnSeed').disabled = false;
+    loadAllData();
+  }catch(e){
+    statusBox(statusEl, '連接失敗：' + e.message, 'bad');
+  }
+}
+
+/* ================= Seed import ================= */
+document.getElementById('btnSeed').addEventListener('click', async ()=>{
+  const el = document.getElementById('seedStatus');
+  el.textContent = '匯入中...';
+  try{
+    const mcSnap = await db.collection('mediaComponents').limit(1).get();
+    if(mcSnap.empty){
+      const batch = db.batch();
+      SEED_MEDIA_COMPONENTS.forEach(item=>{
+        batch.set(db.collection('mediaComponents').doc(item.id), item);
+      });
+      await batch.commit();
+    }
+    const crSnap = await db.collection('clientMediaRates').limit(1).get();
+    if(crSnap.empty){
+      const clientSnap = await db.collection('clients').where('name','==', SEED_CLIENT).limit(1).get();
+      let clientId;
+      if(clientSnap.empty){
+        const ref = await db.collection('clients').add({name: SEED_CLIENT});
+        clientId = ref.id;
+      } else {
+        clientId = clientSnap.docs[0].id;
+      }
+      const batch2 = db.batch();
+      SEED_CLIENT_RATES.forEach((r,idx)=>{
+        const docId = clientId + '_' + r.mediaComponentId;
+        batch2.set(db.collection('clientMediaRates').doc(docId), {
+          client: SEED_CLIENT, clientId: clientId,
+          mediaComponentId: r.mediaComponentId,
+          acRatePercent: r.acRatePercent
+        });
+      });
+      await batch2.commit();
+    }
+    const csSnap = await db.collection('creativeSpecs').limit(1).get();
+    if(csSnap.empty){
+      const batch3 = db.batch();
+      SEED_CREATIVE_SPECS.forEach(item=>{
+        batch3.set(db.collection('creativeSpecs').doc(item.id), item);
+      });
+      await batch3.commit();
+    }
+    el.textContent = '匯入完成！';
+    loadAllData();
+  }catch(e){
+    el.textContent = '匯入失敗：' + e.message;
+  }
+});
+</script>
+<script>
+/* ================= Data loading ================= */
+async function loadAllData(){
+  const [clientsSnap, ratesSnap, mediaSnap, specSnap] = await Promise.all([
+    db.collection('clients').get(),
+    db.collection('clientMediaRates').get(),
+    db.collection('mediaComponents').get(),
+    db.collection('creativeSpecs').get(),
+  ]);
+  CLIENTS = clientsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  CLIENT_RATES = ratesSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  MEDIA_COMPONENTS = mediaSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  CREATIVE_SPECS = specSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  renderClients();
+  renderRateSelectors();
+  renderMediaCueClientSelect();
+  renderMediaChecklist();
+  renderSpecChecklist();
+  renderSpecLibTable();
+}
+
+/* ================= Clients tab ================= */
+function renderClients(){
+  const body = document.getElementById('clientTableBody');
+  if(CLIENTS.length===0){ body.innerHTML = '<tr><td colspan="2" class="empty">尚無客戶，請新增</td></tr>'; return; }
+  body.innerHTML = CLIENTS.map(c=>
+    '<tr><td>'+escapeHtml(c.name)+'</td><td><button class="btn ghost small" onclick="deleteClient(\''+c.id+'\')">刪除</button></td></tr>'
+  ).join('');
+}
+document.getElementById('btnAddClient').addEventListener('click', async ()=>{
+  const name = document.getElementById('newClientName').value.trim();
+  if(!name) return;
+  await db.collection('clients').add({name});
+  document.getElementById('newClientName').value = '';
+  loadAllData();
+});
+async function deleteClient(id){
+  if(!confirm('確定刪除此客戶？相關 AC% 對照不會自動刪除。')) return;
+  await db.collection('clients').doc(id).delete();
+  loadAllData();
+}
+
+/* ================= Rates tab ================= */
+function renderRateSelectors(){
+  const clientSel = document.getElementById('rateClientSelect');
+  clientSel.innerHTML = CLIENTS.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
+  const mediaSel = document.getElementById('rateMediaSelect');
+  mediaSel.innerHTML = MEDIA_COMPONENTS.map(m=>'<option value="'+m.id+'">'+escapeHtml(m.label)+'</option>').join('');
+  clientSel.onchange = renderRateTable;
+  renderRateTable();
+}
+function renderRateTable(){
+  const clientId = document.getElementById('rateClientSelect').value;
+  const body = document.getElementById('rateTableBody');
+  const rows = CLIENT_RATES.filter(r=>r.clientId===clientId);
+  if(rows.length===0){ body.innerHTML = '<tr><td colspan="3" class="empty">此客戶尚無費率設定</td></tr>'; return; }
+  body.innerHTML = rows.map(r=>{
+    const mc = MEDIA_COMPONENTS.find(m=>m.id===r.mediaComponentId);
+    const label = mc ? mc.label : r.mediaComponentId;
+    return '<tr><td>'+escapeHtml(label)+'</td><td>'+r.acRatePercent+'%</td>'+
+      '<td><button class="btn ghost small" onclick="deleteRate(\''+r.id+'\')">刪除</button></td></tr>';
+  }).join('');
+}
+document.getElementById('btnSaveRate').addEventListener('click', async ()=>{
+  const clientId = document.getElementById('rateClientSelect').value;
+  const mediaId = document.getElementById('rateMediaSelect').value;
+  const val = parseFloat(document.getElementById('rateValueInput').value);
+  if(!clientId || !mediaId || isNaN(val)) return;
+  const client = CLIENTS.find(c=>c.id===clientId);
+  const docId = clientId + '_' + mediaId;
+  await db.collection('clientMediaRates').doc(docId).set({
+    client: client ? client.name : '', clientId, mediaComponentId: mediaId, acRatePercent: val
+  });
+  document.getElementById('rateValueInput').value = '';
+  loadAllData();
+});
+async function deleteRate(id){
+  await db.collection('clientMediaRates').doc(id).delete();
+  loadAllData();
+}
+
+function escapeHtml(s){
+  if(s===undefined || s===null) return '';
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+<script>
+/* ================= Media Cue tab ================= */
+function renderMediaCueClientSelect(){
+  const sel = document.getElementById('mcClient');
+  sel.innerHTML = CLIENTS.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
+  sel.onchange = ()=>{ renderMediaChecklist(); renderSelectedMediaRows(); };
+}
+
+function getRateFor(clientId, mediaComponentId){
+  const r = CLIENT_RATES.find(x=>x.clientId===clientId && x.mediaComponentId===mediaComponentId);
+  return r ? r.acRatePercent : null;
+}
+
+function renderMediaChecklist(){
+  const wrap = document.getElementById('mediaChecklist');
+  if(MEDIA_COMPONENTS.length===0){ wrap.innerHTML = '<div class="empty">尚未有媒體元件，請到①匯入起始資料，或到 Firestore 手動新增 mediaComponents。</div>'; return; }
+  const clientId = document.getElementById('mcClient').value;
+  const groups = {};
+  MEDIA_COMPONENTS.forEach(m=>{
+    const g = m.objective || '未分類';
+    (groups[g] = groups[g] || []).push(m);
+  });
+  let html = '';
+  Object.keys(groups).forEach(g=>{
+    html += '<div class="group-title">'+escapeHtml(g)+'</div>';
+    groups[g].forEach(m=>{
+      const rate = getRateFor(clientId, m.id);
+      const checked = selectedMediaIds.has(m.id) ? 'checked' : '';
+      html += '<label class="checklist-item">'+
+        '<input type="checkbox" data-id="'+m.id+'" '+checked+' onchange="toggleMedia(this)">'+
+        '<span>'+
+          '<div><b>'+escapeHtml(m.label)+'</b> '+
+            (m.buyingModel? '<span class="tag">'+escapeHtml(m.buyingModel)+'</span>':'')+
+            (rate!==null? '<span class="pill-rate">AC '+rate+'%</span>' : '<span class="pill-rate" style="background:#eee;color:#888;">此客戶尚無費率</span>')+
+          '</div>'+
+          '<div class="meta">'+escapeHtml(m.adFormat||'')+(m.materialNote? ' ・ 素材：'+escapeHtml(m.materialNote):'')+
+            (m.kpiFieldsNeeded && m.kpiFieldsNeeded.length? ' ・ 需要欄位：'+m.kpiFieldsNeeded.join('、'):'')+
+          '</div>'+
+        '</span>'+
+      '</label>';
+    });
+  });
+  wrap.innerHTML = html;
+}
+
+function toggleMedia(cb){
+  const id = cb.dataset.id;
+  if(cb.checked){
+    selectedMediaIds.add(id);
+    if(!mediaRowInputs[id]){
+      const mc = MEDIA_COMPONENTS.find(m=>m.id===id);
+      mediaRowInputs[id] = {unitPrice: mc && mc.unitPriceDefault ? mc.unitPriceDefault : '', qty:'', mediaPrice:'', rateOverride:''};
+    }
+  } else {
+    selectedMediaIds.delete(id);
+  }
+  renderSelectedMediaRows();
+}
+
+function renderSelectedMediaRows(){
+  const wrap = document.getElementById('selectedMediaRows');
+  const clientId = document.getElementById('mcClient').value;
+  if(selectedMediaIds.size===0){ wrap.innerHTML='<div class="empty">尚未勾選任何媒體元件</div>'; updateGrandTotal(); return; }
+  let html = '<table><thead><tr><th>媒體</th><th>單價</th><th>數量</th><th>Media Price</th><th>AC%</th><th>AC 金額</th><th>Total Budget</th></tr></thead><tbody>';
+  Array.from(selectedMediaIds).forEach(id=>{
+    const m = MEDIA_COMPONENTS.find(x=>x.id===id);
+    if(!m) return;
+    const inp = mediaRowInputs[id];
+    const rate = inp.rateOverride!=='' ? parseFloat(inp.rateOverride) : getRateFor(clientId, id);
+    const mediaPrice = parseFloat(inp.mediaPrice) || 0;
+    const acAmount = rate!=null ? Math.round(mediaPrice * rate / 100) : 0;
+    const total = mediaPrice + acAmount;
+    html += '<tr>'+
+      '<td>'+escapeHtml(m.label)+'</td>'+
+      '<td><input type="number" style="width:90px" value="'+inp.unitPrice+'" onchange="updateRowInput(\''+id+'\',\'unitPrice\',this.value)"></td>'+
+      '<td><input type="number" style="width:70px" value="'+inp.qty+'" onchange="updateRowInput(\''+id+'\',\'qty\',this.value)"></td>'+
+      '<td>'+
+        '<input type="number" style="width:110px" value="'+inp.mediaPrice+'" onchange="updateRowInput(\''+id+'\',\'mediaPrice\',this.value)">'+
+        ' <button class="btn ghost small" onclick="calcMediaPrice(\''+id+'\')">單價×數量</button>'+
+      '</td>'+
+      '<td><input type="number" style="width:70px" placeholder="'+(rate!=null?rate:'—')+'" value="'+inp.rateOverride+'" onchange="updateRowInput(\''+id+'\',\'rateOverride\',this.value)"></td>'+
+      '<td>'+acAmount.toLocaleString()+'</td>'+
+      '<td><b>'+total.toLocaleString()+'</b></td>'+
+      '<td><button class="btn ghost small" onclick="removeMedia(\''+id+'\')">移除</button></td>'+
+    '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+  updateGrandTotal();
+}
+function updateRowInput(id, field, val){
+  mediaRowInputs[id][field] = val;
+  renderSelectedMediaRows();
+}
+function calcMediaPrice(id){
+  const inp = mediaRowInputs[id];
+  const u = parseFloat(inp.unitPrice)||0, q = parseFloat(inp.qty)||0;
+  inp.mediaPrice = (u*q).toString();
+  renderSelectedMediaRows();
+}
+function removeMedia(id){
+  selectedMediaIds.delete(id);
+  document.querySelectorAll('#mediaChecklist input[type=checkbox]').forEach(cb=>{
+    if(cb.dataset.id===id) cb.checked=false;
+  });
+  renderSelectedMediaRows();
+}
+function updateGrandTotal(){
+  const clientId = document.getElementById('mcClient').value;
+  let sum = 0;
+  Array.from(selectedMediaIds).forEach(id=>{
+    const inp = mediaRowInputs[id];
+    const rate = inp.rateOverride!=='' ? parseFloat(inp.rateOverride) : getRateFor(clientId, id);
+    const mediaPrice = parseFloat(inp.mediaPrice) || 0;
+    const acAmount = rate!=null ? Math.round(mediaPrice * rate / 100) : 0;
+    sum += mediaPrice + acAmount;
+  });
+  document.getElementById('mcGrandTotal').textContent = 'NT$ ' + sum.toLocaleString();
+}
+</script>
+<script>
+/* ================= Media Cue export ================= */
+document.getElementById('btnExportMediaCue').addEventListener('click', ()=>{
+  if(selectedMediaIds.size===0){ alert('請先勾選至少一個媒體元件'); return; }
+  const clientId = document.getElementById('mcClient').value;
+  const client = CLIENTS.find(c=>c.id===clientId);
+  const agency = document.getElementById('mcAgency').value;
+  const campaignName = document.getElementById('mcCampaignName').value;
+  const startDate = document.getElementById('mcStartDate').value;
+  const endDate = document.getElementById('mcEndDate').value;
+  const owner = document.getElementById('mcOwner').value;
+
+  const header = [
+    ['Agency Name:', agency],
+    ['Campaign Name:', campaignName],
+    ['Campaign Period:', (startDate&&endDate)? (startDate+' ~ '+endDate) : ''],
+    ['Campaign Owner:', owner],
+    [],
+    ['Media Budget Allocation'],
+    ['Objective','Media','Title','Position/ Channel','廣告形式','Buying Model','單價','數量','Material','需要的KPI欄位','Media Price','AC%','AC 金額','Total Budget']
+  ];
+  const rows = [];
+  let grandTotal = 0;
+  Array.from(selectedMediaIds).forEach(id=>{
+    const m = MEDIA_COMPONENTS.find(x=>x.id===id);
+    if(!m) return;
+    const inp = mediaRowInputs[id];
+    const rate = inp.rateOverride!=='' ? parseFloat(inp.rateOverride) : getRateFor(clientId, id);
+    const mediaPrice = parseFloat(inp.mediaPrice) || 0;
+    const acAmount = rate!=null ? Math.round(mediaPrice * rate / 100) : 0;
+    const total = mediaPrice + acAmount;
+    grandTotal += total;
+    rows.push([
+      m.objective||'', m.media||'', m.title||'', m.position||'', m.adFormat||'',
+      m.buyingModel||'', inp.unitPrice||'', inp.qty||'', m.materialNote||'',
+      (m.kpiFieldsNeeded||[]).join('、'),
+      mediaPrice, (rate!=null? rate+'%':''), acAmount, total
+    ]);
+  });
+  rows.push(['','','','','','','','','','','','','合計', grandTotal]);
+
+  const wsData = header.concat(rows);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [{wch:14},{wch:14},{wch:16},{wch:18},{wch:12},{wch:12},{wch:10},{wch:8},{wch:16},{wch:20},{wch:12},{wch:8},{wch:10},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Media Cue');
+  const fname = (campaignName||'Media_Cue').replace(/[^\w\u4e00-\u9fa5\-]/g,'_') + '.xlsx';
+  XLSX.writeFile(wb, fname);
+});
+
+/* ================= Spec generator tab ================= */
+let specSelected = new Set();
+function renderSpecChecklist(){
+  const wrap = document.getElementById('specChecklist');
+  if(CREATIVE_SPECS.length===0){ wrap.innerHTML = '<div class="empty">尚未有規範資料，請到①匯入起始資料。</div>'; return; }
+  const groups = {};
+  CREATIVE_SPECS.forEach(s=>{ (groups[s.platform]=groups[s.platform]||[]).push(s); });
+  let html='';
+  Object.keys(groups).forEach(p=>{
+    html += '<div class="group-title">'+escapeHtml(p)+'</div>';
+    groups[p].forEach(s=>{
+      const checked = specSelected.has(s.id)?'checked':'';
+      html += '<label class="checklist-item">'+
+        '<input type="checkbox" data-id="'+s.id+'" '+checked+' onchange="toggleSpec(this)">'+
+        '<span><div><b>'+escapeHtml(s.adFormat)+'</b> — '+escapeHtml(s.field)+
+          (s.lastVerified? ' <span class="tag">確認於 '+s.lastVerified+'</span>':' <span class="pill-rate">尚未標註確認日期</span>')+
+        '</div><div class="meta">'+escapeHtml(s.content)+'</div></span>'+
+      '</label>';
+    });
+  });
+  wrap.innerHTML = html;
+}
+function toggleSpec(cb){
+  const id = cb.dataset.id;
+  if(cb.checked) specSelected.add(id); else specSelected.delete(id);
+}
+document.getElementById('btnExportSpecs').addEventListener('click', ()=>{
+  if(specSelected.size===0){ alert('請先勾選至少一項規範'); return; }
+  const campaignName = document.getElementById('specCampaignName').value;
+  const header = [[campaignName||'素材規範表'],[],['平台','廣告形式／版位','欄位','規範內容','注意事項','來源連結','最後確認日期']];
+  const rows = Array.from(specSelected).map(id=>{
+    const s = CREATIVE_SPECS.find(x=>x.id===id);
+    return [s.platform, s.adFormat, s.field, s.content, s.notes||'', s.sourceUrl||'', s.lastVerified||''];
+  });
+  const ws = XLSX.utils.aoa_to_sheet(header.concat(rows));
+  ws['!cols'] = [{wch:14},{wch:18},{wch:16},{wch:50},{wch:40},{wch:24},{wch:12}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '素材規範表');
+  const fname = (campaignName||'素材規範表').replace(/[^\w\u4e00-\u9fa5\-]/g,'_') + '.xlsx';
+  XLSX.writeFile(wb, fname);
+});
+
+/* ================= Spec library management ================= */
+function renderSpecLibTable(){
+  const wrap = document.getElementById('specLibTable');
+  if(CREATIVE_SPECS.length===0){ wrap.innerHTML='<div class="empty">尚無資料</div>'; return; }
+  let html = '<table><thead><tr><th>平台</th><th>形式/版位</th><th>欄位</th><th>內容</th><th>確認日期</th><th></th></tr></thead><tbody>';
+  CREATIVE_SPECS.forEach(s=>{
+    html += '<tr><td>'+escapeHtml(s.platform)+'</td><td>'+escapeHtml(s.adFormat)+'</td><td>'+escapeHtml(s.field)+'</td>'+
+      '<td style="max-width:320px;white-space:pre-wrap;">'+escapeHtml(s.content)+'</td>'+
+      '<td>'+(s.lastVerified||'—')+'</td>'+
+      '<td><button class="btn ghost small" onclick="deleteSpec(\''+s.id+'\')">刪除</button></td></tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+document.getElementById('btnSaveSpec').addEventListener('click', async ()=>{
+  const platform = document.getElementById('specPlatform').value.trim();
+  const adFormat = document.getElementById('specFormat').value.trim();
+  const field = document.getElementById('specField').value.trim();
+  const content = document.getElementById('specContent').value.trim();
+  const notes = document.getElementById('specNotes').value.trim();
+  const sourceUrl = document.getElementById('specSourceUrl').value.trim();
+  const lastVerified = document.getElementById('specLastVerified').value;
+  if(!platform || !adFormat || !field || !content){ alert('平台、形式、欄位、內容為必填'); return; }
+  const id = 'cs_' + Date.now();
+  await db.collection('creativeSpecs').doc(id).set({platform, adFormat, field, content, notes, sourceUrl, lastVerified});
+  ['specPlatform','specFormat','specField','specContent','specNotes','specSourceUrl','specLastVerified'].forEach(i=>document.getElementById(i).value='');
+  loadAllData();
+});
+async function deleteSpec(id){
+  if(!confirm('確定刪除此規範條目？')) return;
+  await db.collection('creativeSpecs').doc(id).delete();
+  loadAllData();
+}
+
+/* ================= Init ================= */
+tryAutoConnect();
+</script>
+</body>
+</html>

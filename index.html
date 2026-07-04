@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>媒體工具箱 Pro | 單機版</title>
+<title>媒體工具箱 Pro | 單機版 v3 (進階版位與多重走期)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
@@ -16,12 +16,12 @@
   *{box-sizing:border-box;}
   body{margin:0;background:var(--paper);color:var(--ink); line-height:1.5;}
   header{padding:24px 32px 0; background:var(--card); border-bottom:1px solid var(--line);}
-  h1{font-size:22px; margin:0 0 4px; font-weight:600; color:#1a1a1a;}
+  h1{font-size:22px; margin:0 0 4px; font-weight:600;}
   .sub{color:var(--muted); font-size:13px; margin-bottom:16px;}
-  nav{display:flex; gap:24px; padding:0 32px; flex-wrap:wrap; background:var(--card); border-bottom:1px solid var(--line); box-shadow:0 1px 2px rgba(0,0,0,0.02);}
+  nav{display:flex; gap:24px; padding:0 32px; flex-wrap:wrap; background:var(--card); border-bottom:1px solid var(--line);}
   nav button{
     background:none; border:none; padding:14px 4px; font-size:14px; color:var(--muted);
-    cursor:pointer; border-bottom:3px solid transparent; font-weight:500; transition:all 0.2s;
+    cursor:pointer; border-bottom:3px solid transparent; font-weight:500;
   }
   nav button:hover{color:var(--primary);}
   nav button.active{color:var(--primary); border-bottom-color:var(--primary); font-weight:600;}
@@ -29,118 +29,89 @@
   .panel{display:none;} .panel.active{display:block;}
   .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.02);}
   .card h2{font-size:16px; margin:0 0 16px; font-weight:600;}
-  .card h3{font-size:14px; margin:20px 0 12px; color:var(--ink); font-weight:600; border-top:1px solid var(--line); padding-top:20px;}
   label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px; font-weight:500;}
-  input[type=text], input[type=number], input[type=date], select, textarea{
+  input, select, textarea{
     width:100%; padding:10px 12px; border:1px solid #ced4da; border-radius:8px;
-    font-size:14px; background:#fff; color:var(--ink); transition:border-color 0.2s;
+    font-size:14px; background:#fff;
   }
-  input:focus, select:focus, textarea:focus{border-color:var(--primary); outline:none; box-shadow:0 0 0 3px var(--primary-soft);}
-  .row{display:flex; gap:16px; flex-wrap:wrap;} .row > div{flex:1; min-width:180px;}
+  .row{display:flex; gap:16px; flex-wrap:wrap; align-items:end;} .row > div{flex:1; min-width:180px;}
   button.btn{
     background:var(--primary); color:#fff; border:none; padding:10px 20px; border-radius:8px;
-    font-size:14px; font-weight:500; cursor:pointer; transition:background 0.2s;
+    font-size:14px; font-weight:500; cursor:pointer;
   }
   button.btn:hover{background:var(--primary-hover);}
   button.btn.secondary{background:#fff; color:var(--primary); border:1px solid var(--primary);}
-  button.btn.secondary:hover{background:var(--primary-soft);}
   button.btn.ghost{background:none; color:var(--warn); border:1px solid transparent; padding:6px 12px;}
-  button.btn.ghost:hover{background:var(--warn-soft); border-color:var(--warn-soft);}
   button.btn.small{padding:6px 12px; font-size:13px;}
-  table{width:100%; border-collapse:collapse; font-size:14px;}
-  th, td{border-bottom:1px solid var(--line); padding:12px 10px; text-align:left; vertical-align:middle;}
-  th{color:var(--muted); font-weight:600; font-size:13px; background:#f8f9fa;}
-  tr:hover td{background:var(--primary-soft);}
-  .status{font-size:13px; padding:10px 16px; border-radius:8px; margin-bottom:16px; background:#e8f0fe; color:#1967d2;}
-  .group-title{font-size:14px; font-weight:600; margin:24px 0 12px; color:var(--ink); border-left:4px solid var(--primary); padding-left:10px;}
-  .checklist-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:12px;}
-  .checklist-item{
-    display:flex; align-items:flex-start; gap:12px; padding:12px; border:1px solid var(--line); 
-    border-radius:8px; cursor:pointer; transition:all 0.2s; background:#fff;
-  }
-  .checklist-item:hover{border-color:var(--primary); box-shadow:0 2px 6px rgba(37,78,219,0.1);}
-  .checklist-item input[type=checkbox]{margin-top:4px; transform:scale(1.1);}
-  .checklist-item .meta{font-size:12px; color:var(--muted); margin-top:4px;}
-  .pill-rate{font-size:12px; padding:2px 8px; border-radius:12px; background:var(--primary-soft); color:var(--primary); font-weight:500;}
-  .empty{color:var(--muted); font-size:14px; padding:24px 0; text-align:center; background:#f8f9fa; border-radius:8px; border:1px dashed #ced4da;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{border-bottom:1px solid var(--line); padding:12px 10px; text-align:left;}
+  th{color:var(--muted); font-weight:600; background:#f8f9fa;}
   .totalbar{display:flex; justify-content:space-between; align-items:center; background:#e8eaed; padding:16px 20px; border-radius:8px; margin-top:16px; font-size:15px; font-weight:600;}
   .totalbar b{font-size:20px; color:var(--primary);}
+  .pill{font-size:11px; padding:2px 8px; border-radius:12px; background:#eee; color:#555;}
 </style>
 </head>
 <body>
 <header>
-  <h1>媒體工具箱 Pro</h1>
-  <div class="sub">獨立運作的 Media Cue & 素材規範產生器 (本機儲存版)</div>
+  <h1>媒體工具箱 Pro v3</h1>
+  <div class="sub">獨立運作版 (支援多走期、小數點AC、客戶獨立媒體庫)</div>
 </header>
 <nav>
-  <button data-tab="setup" class="active">設定與匯入</button>
-  <button data-tab="clients">客戶與 AC% 管理</button>
-  <button data-tab="media">媒體庫管理</button>
-  <button data-tab="mediacue">Media Cue 產生器</button>
-  <button data-tab="specs">素材規範產生器</button>
+  <button data-tab="setup">設定</button>
+  <button data-tab="clients">1. 客戶管理</button>
+  <button data-tab="media" class="active">2. 媒體庫管理</button>
+  <button data-tab="mediacue">3. Media Cue 產生器</button>
+  <button data-tab="specs">4. 素材規範產生器</button>
 </nav>
 
 <main>
-  <div class="panel active" id="panel-setup">
+  <div class="panel" id="panel-setup">
     <div class="card">
-      <h2>快速啟動</h2>
-      <p class="sub">目前為「單機測試版」，所有資料皆儲存於瀏覽器中，不需連線資料庫。</p>
-      <div id="statusMsg"></div>
-      <button class="btn" id="btnSeedLocal">匯入預設模板資料 (瞬間完成)</button>
-      <button class="btn ghost" id="btnClearData" style="margin-left:12px;">清除所有資料</button>
+      <h2>資料初始化</h2>
+      <button class="btn" id="btnSeedLocal">匯入測試資料</button>
+      <button class="btn ghost" id="btnClearData">清空資料</button>
     </div>
   </div>
 
   <div class="panel" id="panel-clients">
     <div class="card">
-      <h2>1. 客戶清單管理</h2>
+      <h2>新增客戶</h2>
       <div class="row">
-        <div><label>客戶名稱</label><input type="text" id="newClientName" placeholder="例如：Alinamin"></div>
-        <div style="flex:0 0 auto; align-self:flex-end;"><button class="btn secondary" id="btnAddClient">新增客戶</button></div>
+        <div><input type="text" id="newClientName" placeholder="例如：Alinamin"></div>
+        <div style="flex:0 0 auto;"><button class="btn" id="btnAddClient">新增客戶</button></div>
       </div>
       <table style="margin-top:16px;">
         <thead><tr><th>客戶名稱</th><th style="width:80px;">操作</th></tr></thead>
         <tbody id="clientTableBody"></tbody>
       </table>
     </div>
-
-    <div class="card">
-      <h2>2. 客戶專屬 AC% 費率設定</h2>
-      <p class="sub">設定此客戶套用在各媒體的特定 AC%。</p>
-      <div class="row"><div><label>選擇客戶</label><select id="rateClientSelect"></select></div></div>
-      <table style="margin-top:16px;">
-        <thead><tr><th>媒體元件</th><th>AC (%)</th><th style="width:80px;">操作</th></tr></thead>
-        <tbody id="rateTableBody"></tbody>
-      </table>
-      
-      <h3>新增此客戶的費率</h3>
-      <div class="row">
-        <div style="flex:2;"><label>選擇媒體 (請先至「媒體庫」新增)</label><select id="rateMediaSelect"></select></div>
-        <div><label>AC% 數值</label><input type="number" id="rateValueInput" placeholder="例: 10" step="0.1"></div>
-        <div style="flex:0 0 auto; align-self:flex-end;"><button class="btn" id="btnSaveRate">儲存設定</button></div>
-      </div>
-    </div>
   </div>
 
-  <div class="panel" id="panel-media">
+  <div class="panel active" id="panel-media">
     <div class="card">
-      <h2>新增媒體元件 (Master Database)</h2>
-      <p class="sub">在這裡新增的媒體，才會出現在 Media Cue 產生器與費率設定中。</p>
+      <h2>新增客戶專屬媒體</h2>
+      <p class="sub">媒體設定綁定客戶。不同客戶的同一個媒體（如YT），可能因為代理合約有不同的 AC%、單價。</p>
       <div class="row">
-        <div><label>分類 (Objective)</label><input type="text" id="newMediaObj" placeholder="例：廣度覆蓋"></div>
+        <div><label>隸屬客戶</label><select id="newMediaClient"></select></div>
         <div><label>主媒體 (Media)</label><input type="text" id="newMediaMain" placeholder="例：Digital"></div>
-        <div><label>版位名稱 (Title/Position)</label><input type="text" id="newMediaTitle" placeholder="例：Meta Newsfeed"></div>
+        <div><label>平台 (Title)</label><input type="text" id="newMediaTitle" placeholder="例：YouTube"></div>
+        <div><label>版位 (Position)</label><input type="text" id="newMediaPosition" placeholder="例：VRC 2.0 / Bumper"></div>
       </div>
       <div class="row" style="margin-top:12px;">
-        <div><label>預設單價</label><input type="number" id="newMediaPrice" placeholder="例：120"></div>
-        <div><label>購買模式 (Model)</label><input type="text" id="newMediaModel" placeholder="例：CPM"></div>
-        <div style="flex:0 0 auto; align-self:flex-end;"><button class="btn secondary" id="btnAddMedia">新增至庫存</button></div>
+        <div><label>廣告形式 (Format)</label><input type="text" id="newMediaFormat" placeholder="例：Video / Banner"></div>
+        <div><label>單價 (可不填)</label><input type="number" id="newMediaPrice" step="any"></div>
+        <div><label>Model</label><input type="text" id="newMediaModel" placeholder="例：CPM / CPRP"></div>
+        <div><label>AC% (例: 3.75)</label><input type="number" id="newMediaAC" step="any" placeholder="3.75"></div>
+        <div style="flex:0 0 auto;"><button class="btn" id="btnAddMedia">新增</button></div>
       </div>
     </div>
     <div class="card">
-      <h2>現有媒體庫總覽</h2>
-      <table style="margin-top:16px;">
-        <thead><tr><th>分類</th><th>主媒體</th><th>版位名稱</th><th>單價/模式</th><th style="width:80px;">操作</th></tr></thead>
+      <h2>媒體庫總覽</h2>
+      <div class="row" style="margin-bottom:12px; align-items:center;">
+        <div style="max-width:200px;"><select id="filterMediaClient"><option value="ALL">顯示全部客戶</option></select></div>
+      </div>
+      <table>
+        <thead><tr><th>客戶</th><th>主媒體</th><th>平台 (Title)</th><th>版位 (Position)</th><th>形式</th><th>單價 / Model</th><th>AC%</th><th>操作</th></tr></thead>
         <tbody id="mediaTableBody"></tbody>
       </table>
     </div>
@@ -148,24 +119,42 @@
 
   <div class="panel" id="panel-mediacue">
     <div class="card">
-      <h2>Campaign 專案資訊</h2>
+      <h2>專案基本資訊</h2>
       <div class="row">
-        <div><label>客戶</label><select id="mcClient"></select></div>
+        <div><label>選擇客戶</label><select id="mcClient"></select></div>
         <div><label>Campaign 名稱</label><input type="text" id="mcCampaignName"></div>
-        <div><label>走期</label><input type="text" id="mcPeriod" placeholder="例: 2026/7/27-9/30"></div>
+        <div><label>專案總走期</label><input type="text" id="mcTotalPeriod" placeholder="例: 2026/7/1-9/30"></div>
+      </div>
+    </div>
+
+    <div class="card" style="background:#f8f9fa;">
+      <h2>加入媒體版位至 Campaign</h2>
+      <div class="row">
+        <div style="flex:3;"><label>選擇該客戶的媒體 (可重複加入同一版位)</label><select id="mcMediaSelect"></select></div>
+        <div style="flex:0 0 auto;"><button class="btn" id="btnAddMCRow">新增列</button></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>步驟一：勾選本次使用的媒體</h2>
-      <div id="mediaChecklist"><div class="empty">請先新增或匯入媒體元件</div></div>
-    </div>
-
-    <div class="card">
-      <h2>步驟二：設定預算與匯出</h2>
-      <div id="selectedMediaRows"><div class="empty">尚未勾選媒體</div></div>
+      <h2>已選媒體 (可自訂走期與預算)</h2>
+      <div id="selectedMediaRows" style="overflow-x:auto;">
+        <table style="min-width:1000px;">
+          <thead>
+            <tr>
+              <th style="width:25%">媒體版位</th>
+              <th>獨立走期</th>
+              <th style="width:10%">Media Price</th>
+              <th style="width:8%">AC%</th>
+              <th style="width:10%">AC Amt.</th>
+              <th style="width:12%">Total Budget</th>
+              <th style="width:5%"></th>
+            </tr>
+          </thead>
+          <tbody id="mcTbody"><tr><td colspan="7" style="text-align:center;color:#888;">尚未加入任何媒體</td></tr></tbody>
+        </table>
+      </div>
       <div class="totalbar">
-        <span>Total Budget 合計 (含 AC)</span>
+        <span>Total Budget 合計</span>
         <b id="mcGrandTotal">NT$ 0</b>
       </div>
       <div style="margin-top:20px; text-align:right;">
@@ -177,9 +166,7 @@
   <div class="panel" id="panel-specs">
     <div class="card">
       <h2>勾選素材規範</h2>
-      <div class="checklist-grid" id="specChecklist">
-        <div class="empty" style="grid-column: 1/-1;">請先匯入資料</div>
-      </div>
+      <div id="specChecklist">請先匯入測試資料</div>
       <div style="margin-top:20px; text-align:right;">
         <button class="btn" id="btnExportSpecs">匯出規範表 (.xlsx)</button>
       </div>
@@ -188,173 +175,191 @@
 </main>
 
 <script>
-/* === Local Storage Database Logic === */
-let db = { clients:[], rates:[], media:[], specs:[] };
+let db = { clients:[], media:[], specs:[] };
+let mcRows = []; // { id, mediaId, period, price, acRate }
 
 function loadData() {
-  const saved = localStorage.getItem('mediaProDB');
-  if(saved) { db = JSON.parse(saved); }
+  const saved = localStorage.getItem('mediaProDB_v3');
+  if(saved) db = JSON.parse(saved);
   refreshUI();
 }
-function saveData() {
-  localStorage.setItem('mediaProDB', JSON.stringify(db));
-  refreshUI();
-}
-function clearData() {
-  if(confirm("確定清空所有本機資料？")) { localStorage.removeItem('mediaProDB'); db = { clients:[], rates:[], media:[], specs:[] }; refreshUI(); }
-}
+function saveData() { localStorage.setItem('mediaProDB_v3', JSON.stringify(db)); refreshUI(); }
+function clearData() { if(confirm("確定清空？")) { localStorage.removeItem('mediaProDB_v3'); db = {clients:[], media:[], specs:[]}; refreshUI(); } }
 
-/* === UI Tab Switching === */
 document.querySelectorAll('nav button').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    btn.classList.add('active'); document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
   });
 });
 
-/* === Seed Data (Local) === */
 document.getElementById('btnSeedLocal').addEventListener('click', () => {
   db.clients = [{id: 'c1', name: 'Alinamin'}];
   db.media = [
-    {id: 'm1', objective: '廣度覆蓋', media: 'TV+OTV', label: 'TV+MOD', defaultPrice: 1240, model: 'CPRP'},
-    {id: 'm2', objective: '廣度覆蓋', media: 'Digital', label: 'YouTube Bumper 6s', defaultPrice: 90, model: 'CPM'},
-    {id: 'm3', objective: '數據驅動', media: 'Digital', label: 'Meta Newsfeed (Video)', defaultPrice: 69, model: 'CPM'}
+    {id:'m1', clientId:'c1', media:'TV+OTV', title:'TV+MOD', position:'Cable', format:'Video', price:1240, model:'CPRP', ac:1},
+    {id:'m2', clientId:'c1', media:'Digital', title:'YouTube', position:'VRC 2.0', format:'Video', price:80, model:'CPM', ac:3.75},
+    {id:'m3', clientId:'c1', media:'Digital', title:'YouTube', position:'Non-Skippable 15s', format:'Video', price:180, model:'CPM', ac:4}
   ];
-  db.rates = [
-    {clientId: 'c1', mediaId: 'm1', rate: 10},
-    {clientId: 'c1', mediaId: 'm2', rate: 4},
-    {clientId: 'c1', mediaId: 'm3', rate: 4}
-  ];
-  db.specs = [
-    {id:'s1', platform:'YouTube', title:'Bumper', content:'6秒不可略過，1920x1080 MP4'},
-    {id:'s2', platform:'Meta', title:'Newsfeed', content:'比例 4:5 或 1:1，MP4，上限4GB'}
-  ];
-  saveData();
-  document.getElementById('statusMsg').innerHTML = '<div class="status">✅ 測試資料匯入成功！現在可以到其他分頁看看了。</div>';
+  db.specs = [{id:'s1', platform:'YouTube', format:'VRC 2.0', content:'16:9, MP4'}];
+  saveData(); alert("測試資料匯入完成");
 });
 document.getElementById('btnClearData').addEventListener('click', clearData);
 
-/* === Render UI Functions === */
 function refreshUI() {
   renderClients();
   renderMediaLibrary();
-  renderRateSelectors();
-  renderMediaCue();
-  renderSpecs();
+  renderMCClientSelect();
 }
 
-/* Clients */
+/* 1. CLIENTS */
 function renderClients() {
-  const tbody = document.getElementById('clientTableBody');
-  tbody.innerHTML = db.clients.map(c => `<tr><td>${c.name}</td><td><button class="btn ghost small" onclick="delClient('${c.id}')">刪除</button></td></tr>`).join('');
-  document.getElementById('mcClient').innerHTML = db.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('clientTableBody').innerHTML = db.clients.map(c => `<tr><td>${c.name}</td><td><button class="btn ghost small" onclick="delClient('${c.id}')">刪除</button></td></tr>`).join('');
+  const opts = db.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('newMediaClient').innerHTML = opts;
+  document.getElementById('filterMediaClient').innerHTML = '<option value="ALL">顯示全部客戶</option>' + opts;
 }
 document.getElementById('btnAddClient').addEventListener('click', () => {
   const name = document.getElementById('newClientName').value;
-  if(name) { db.clients.push({id: 'c_'+Date.now(), name}); document.getElementById('newClientName').value=''; saveData(); }
+  if(name) { db.clients.push({id:'c_'+Date.now(), name}); document.getElementById('newClientName').value=''; saveData(); }
 });
 function delClient(id) { db.clients = db.clients.filter(c => c.id !== id); saveData(); }
 
-/* Media Library */
+/* 2. MEDIA LIBRARY */
 function renderMediaLibrary() {
-  const tbody = document.getElementById('mediaTableBody');
-  tbody.innerHTML = db.media.map(m => `<tr><td>${m.objective}</td><td>${m.media}</td><td><b>${m.label}</b></td><td>${m.defaultPrice} / ${m.model}</td><td><button class="btn ghost small" onclick="delMedia('${m.id}')">刪除</button></td></tr>`).join('');
+  const filterCid = document.getElementById('filterMediaClient').value;
+  let list = db.media;
+  if(filterCid !== 'ALL') list = list.filter(m => m.clientId === filterCid);
+  
+  document.getElementById('mediaTableBody').innerHTML = list.map(m => {
+    const c = db.clients.find(x => x.id === m.clientId);
+    return `<tr><td><span class="pill">${c?c.name:'?'}</span></td>
+            <td>${m.media}</td><td><b>${m.title}</b></td><td>${m.position}</td><td>${m.format}</td>
+            <td>${m.price||'-'} / ${m.model}</td><td>${m.ac}%</td>
+            <td><button class="btn ghost small" onclick="delMedia('${m.id}')">刪除</button></td></tr>`;
+  }).join('');
 }
+document.getElementById('filterMediaClient').addEventListener('change', renderMediaLibrary);
 document.getElementById('btnAddMedia').addEventListener('click', () => {
-  const obj = document.getElementById('newMediaObj').value;
-  const main = document.getElementById('newMediaMain').value;
+  const clientId = document.getElementById('newMediaClient').value;
   const title = document.getElementById('newMediaTitle').value;
-  const price = document.getElementById('newMediaPrice').value;
-  const model = document.getElementById('newMediaModel').value;
-  if(title) { db.media.push({id: 'm_'+Date.now(), objective: obj, media: main, label: title, defaultPrice: price, model}); saveData(); }
+  if(!clientId || !title) return alert("客戶與Title必填");
+  db.media.push({
+    id:'m_'+Date.now(), clientId,
+    media:document.getElementById('newMediaMain').value, title,
+    position:document.getElementById('newMediaPosition').value, format:document.getElementById('newMediaFormat').value,
+    price:document.getElementById('newMediaPrice').value, model:document.getElementById('newMediaModel').value,
+    ac:document.getElementById('newMediaAC').value
+  });
+  saveData();
 });
 function delMedia(id) { db.media = db.media.filter(m => m.id !== id); saveData(); }
 
-/* Rates */
-function renderRateSelectors() {
-  const cSel = document.getElementById('rateClientSelect');
-  cSel.innerHTML = db.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  document.getElementById('rateMediaSelect').innerHTML = db.media.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
-  cSel.onchange = renderRateTable;
-  renderRateTable();
+/* 3. MEDIA CUE GENERATOR */
+function renderMCClientSelect() {
+  const sel = document.getElementById('mcClient');
+  const prevVal = sel.value;
+  sel.innerHTML = db.clients.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if(prevVal && db.clients.find(c=>c.id===prevVal)) sel.value = prevVal;
+  updateMCMediaDropdown();
 }
-function renderRateTable() {
-  const cid = document.getElementById('rateClientSelect').value;
-  const tbody = document.getElementById('rateTableBody');
-  const rates = db.rates.filter(r => r.clientId === cid);
-  tbody.innerHTML = rates.map(r => {
-    const m = db.media.find(x => x.id === r.mediaId);
-    return `<tr><td>${m?m.label:'未知'}</td><td><b>${r.rate}%</b></td><td><button class="btn ghost small" onclick="delRate('${r.clientId}','${r.mediaId}')">刪除</button></td></tr>`;
-  }).join('');
-}
-document.getElementById('btnSaveRate').addEventListener('click', () => {
-  const cid = document.getElementById('rateClientSelect').value;
-  const mid = document.getElementById('rateMediaSelect').value;
-  const rate = document.getElementById('rateValueInput').value;
-  if(cid && mid && rate) {
-    db.rates = db.rates.filter(r => !(r.clientId===cid && r.mediaId===mid));
-    db.rates.push({clientId: cid, mediaId: mid, rate: parseFloat(rate)});
-    saveData();
-  }
+document.getElementById('mcClient').addEventListener('change', () => {
+  updateMCMediaDropdown();
+  mcRows = []; // 切換客戶清空列表
+  renderMCRows();
 });
-function delRate(cid, mid) { db.rates = db.rates.filter(r => !(r.clientId===cid && r.mediaId===mid)); saveData(); }
 
-/* Media Cue */
-let mcSelected = new Set();
-let mcInputs = {};
-function renderMediaCue() {
+function updateMCMediaDropdown() {
   const cid = document.getElementById('mcClient').value;
-  const clist = document.getElementById('mediaChecklist');
-  let html = '<div class="checklist-grid">';
-  db.media.forEach(m => {
-    const rateObj = db.rates.find(r => r.clientId === cid && r.mediaId === m.id);
-    const rateText = rateObj ? `AC ${rateObj.rate}%` : '無費率';
-    const checked = mcSelected.has(m.id) ? 'checked' : '';
-    html += `<label class="checklist-item"><input type="checkbox" data-id="${m.id}" ${checked} onchange="toggleMC(this)">
-             <span><b>${m.label}</b> <span class="pill-rate">${rateText}</span></span></label>`;
-  });
-  clist.innerHTML = html + '</div>';
-  renderMCRows();
+  const list = db.media.filter(m => m.clientId === cid);
+  document.getElementById('mcMediaSelect').innerHTML = list.map(m => 
+    `<option value="${m.id}">[${m.title}] ${m.position} (${m.format}) - AC ${m.ac}%</option>`
+  ).join('');
 }
-document.getElementById('mcClient').addEventListener('change', renderMediaCue);
 
-function toggleMC(cb) {
-  if(cb.checked) { mcSelected.add(cb.dataset.id); if(!mcInputs[cb.dataset.id]) mcInputs[cb.dataset.id] = {price:0}; } 
-  else { mcSelected.delete(cb.dataset.id); }
+document.getElementById('btnAddMCRow').addEventListener('click', () => {
+  const mid = document.getElementById('mcMediaSelect').value;
+  if(!mid) return alert("請先選擇媒體");
+  const m = db.media.find(x => x.id === mid);
+  mcRows.push({ id:'r_'+Date.now(), mediaId:mid, period:'', price:0, acRate: m.ac });
   renderMCRows();
-}
+});
+
 function renderMCRows() {
-  const cid = document.getElementById('mcClient').value;
-  const tbody = document.getElementById('selectedMediaRows');
-  if(mcSelected.size === 0) { tbody.innerHTML = '<div class="empty">尚未勾選媒體</div>'; document.getElementById('mcGrandTotal').innerText='NT$ 0'; return; }
+  const tbody = document.getElementById('mcTbody');
+  if(mcRows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:30px;">尚未加入媒體，請從上方選擇並點擊「新增列」</td></tr>';
+    document.getElementById('mcGrandTotal').innerText = 'NT$ 0';
+    return;
+  }
   
-  let html = '<table><thead><tr><th>媒體</th><th>Media Price</th><th>AC%</th><th>小計</th></tr></thead><tbody>';
   let total = 0;
-  mcSelected.forEach(id => {
-    const m = db.media.find(x => x.id === id);
-    const rateObj = db.rates.find(r => r.clientId === cid && r.mediaId === id);
-    const rate = rateObj ? rateObj.rate : 0;
-    const price = parseFloat(mcInputs[id].price) || 0;
-    const ac = Math.round(price * (rate/100));
-    const sub = price + ac;
+  tbody.innerHTML = mcRows.map((r, i) => {
+    const m = db.media.find(x => x.id === r.mediaId);
+    if(!m) return '';
+    const price = parseFloat(r.price) || 0;
+    const rate = parseFloat(r.acRate) || 0;
+    const acAmt = Math.round(price * (rate/100));
+    const sub = price + acAmt;
     total += sub;
-    html += `<tr><td>${m.label}</td>
-             <td><input type="number" value="${mcInputs[id].price}" onchange="mcInputs['${id}'].price=this.value; renderMCRows()"></td>
-             <td>${rate}%</td><td><b>${sub.toLocaleString()}</b></td></tr>`;
-  });
-  tbody.innerHTML = html + '</tbody></table>';
+    
+    return `<tr>
+      <td><b>${m.title}</b><br><span style="font-size:12px;color:#888;">${m.position} | ${m.format}</span></td>
+      <td><input type="text" placeholder="自訂走期" value="${r.period}" onchange="updateMCRow(${i}, 'period', this.value)"></td>
+      <td><input type="number" step="any" value="${r.price}" onchange="updateMCRow(${i}, 'price', this.value)"></td>
+      <td><input type="number" step="0.01" value="${r.acRate}" onchange="updateMCRow(${i}, 'acRate', this.value)"></td>
+      <td>${acAmt.toLocaleString()}</td>
+      <td><b>${sub.toLocaleString()}</b></td>
+      <td><button class="btn ghost small" onclick="delMCRow(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
   document.getElementById('mcGrandTotal').innerText = 'NT$ ' + total.toLocaleString();
 }
+function updateMCRow(idx, field, val) { mcRows[idx][field] = val; renderMCRows(); }
+function delMCRow(idx) { mcRows.splice(idx, 1); renderMCRows(); }
 
-/* Specs */
+document.getElementById('btnExportMediaCue').addEventListener('click', () => {
+  if(mcRows.length === 0) return alert('請先加入媒體');
+  const campName = document.getElementById('mcCampaignName').value || 'Campaign';
+  const header = [
+    ['Campaign Name', campName],
+    ['Total Period', document.getElementById('mcTotalPeriod').value], [],
+    ['Media','Title','Position/Channel','Format','Buying Model','Period','Media Price','AC%','AC Amt.','Total Budget']
+  ];
+  let grandTotal = 0;
+  const rows = mcRows.map(r => {
+    const m = db.media.find(x => x.id === r.mediaId) || {};
+    const p = parseFloat(r.price)||0; const ac = parseFloat(r.acRate)||0;
+    const amt = Math.round(p*(ac/100)); const total = p+amt; grandTotal += total;
+    return [m.media, m.title, m.position, m.format, m.model, r.period, p, ac+'%', amt, total];
+  });
+  rows.push(['','','','','','','','','Total', grandTotal]);
+  
+  const ws = XLSX.utils.aoa_to_sheet([...header, ...rows]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Media Cue");
+  XLSX.writeFile(wb, campName + "_MediaCue.xlsx");
+});
+
+/* 4. SPECS */
 function renderSpecs() {
-  const wrap = document.getElementById('specChecklist');
-  wrap.innerHTML = db.specs.map(s => `<label class="checklist-item"><input type="checkbox"><span><b>${s.platform} - ${s.title}</b><div class="meta">${s.content}</div></span></label>`).join('');
+  document.getElementById('specChecklist').innerHTML = db.specs.map(s => 
+    `<label style="padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:6px; display:block;">
+      <input type="checkbox" class="spec-cb" data-id="${s.id}"> <b>${s.platform} - ${s.format}</b>: ${s.content}
+    </label>`
+  ).join('');
 }
+document.getElementById('btnExportSpecs').addEventListener('click', () => {
+  const selectedIds = Array.from(document.querySelectorAll('.spec-cb:checked')).map(cb=>cb.dataset.id);
+  if(selectedIds.length === 0) return alert('未勾選規範');
+  const rows = [['Platform','Format','Spec']];
+  selectedIds.forEach(id => {
+    const s = db.specs.find(x=>x.id===id); if(s) rows.push([s.platform, s.format, s.content]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Specs");
+  XLSX.writeFile(wb, "Specs.xlsx");
+});
 
-/* Init */
 loadData();
 </script>
 </body>

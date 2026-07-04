@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -291,13 +291,38 @@ document.getElementById('btnClearConfig').addEventListener('click', ()=>{
   statusBox(document.getElementById('connectStatus'), '已清除本機設定，重新整理頁面後生效。', 'info');
 });
 
+function extractFirebaseConfig(raw){
+  // 1) 先試嚴格 JSON
+  try{ return JSON.parse(raw); }catch(e){}
+  // 2) 從整段貼上的程式碼（例如含 const firebaseConfig = {...}）裡抓出物件字面量
+  const match = raw.match(/\{[\s\S]*\}/);
+  if(match){
+    try{
+      // 用 Function 安全地把 JS 物件字面量（含未加引號的 key）轉成物件，僅在使用者自己的瀏覽器執行
+      const obj = new Function('return (' + match[0] + ')')();
+      if(obj && typeof obj === 'object') return obj;
+    }catch(e){}
+  }
+  return null;
+}
+
+function withTimeout(promise, ms=15000){
+  return Promise.race([
+    promise,
+    new Promise((_,reject)=>setTimeout(()=>reject(new Error('逾時（15秒內沒有回應，通常代表 Firestore Database 還沒建立，或安全規則擋住了讀寫）')), ms))
+  ]);
+}
+function friendlyError(e){
+  const msg = (e && e.message) || String(e);
+  if(/permission/i.test(msg)) return '權限不足：請到 Firestore → 規則(Rules) 確認允許讀寫（測試階段可設 allow read, write: if true;）。原始訊息：'+msg;
+  return msg;
+}
+
 function connectFirebase(raw, silent){
   const statusEl = document.getElementById('connectStatus');
-  let cfg;
-  try{
-    cfg = JSON.parse(raw);
-  }catch(e){
-    if(!silent) statusBox(statusEl, 'Config 格式錯誤，請確認是合法的 JSON 物件（例如用雙引號包住 key）。', 'bad');
+  const cfg = extractFirebaseConfig(raw);
+  if(!cfg){
+    if(!silent) statusBox(statusEl, 'Config 格式錯誤，請貼上完整的 Firebase config（可以直接貼 Firebase Console 給的整段程式碼，或只貼 { ... } 物件）。', 'bad');
     return;
   }
   try{
@@ -318,20 +343,20 @@ document.getElementById('btnSeed').addEventListener('click', async ()=>{
   const el = document.getElementById('seedStatus');
   el.textContent = '匯入中...';
   try{
-    const mcSnap = await db.collection('mediaComponents').limit(1).get();
+    const mcSnap = await withTimeout(db.collection('mediaComponents').limit(1).get());
     if(mcSnap.empty){
       const batch = db.batch();
       SEED_MEDIA_COMPONENTS.forEach(item=>{
         batch.set(db.collection('mediaComponents').doc(item.id), item);
       });
-      await batch.commit();
+      await withTimeout(batch.commit());
     }
-    const crSnap = await db.collection('clientMediaRates').limit(1).get();
+    const crSnap = await withTimeout(db.collection('clientMediaRates').limit(1).get());
     if(crSnap.empty){
-      const clientSnap = await db.collection('clients').where('name','==', SEED_CLIENT).limit(1).get();
+      const clientSnap = await withTimeout(db.collection('clients').where('name','==', SEED_CLIENT).limit(1).get());
       let clientId;
       if(clientSnap.empty){
-        const ref = await db.collection('clients').add({name: SEED_CLIENT});
+        const ref = await withTimeout(db.collection('clients').add({name: SEED_CLIENT}));
         clientId = ref.id;
       } else {
         clientId = clientSnap.docs[0].id;
@@ -345,32 +370,38 @@ document.getElementById('btnSeed').addEventListener('click', async ()=>{
           acRatePercent: r.acRatePercent
         });
       });
-      await batch2.commit();
+      await withTimeout(batch2.commit());
     }
-    const csSnap = await db.collection('creativeSpecs').limit(1).get();
+    const csSnap = await withTimeout(db.collection('creativeSpecs').limit(1).get());
     if(csSnap.empty){
       const batch3 = db.batch();
       SEED_CREATIVE_SPECS.forEach(item=>{
         batch3.set(db.collection('creativeSpecs').doc(item.id), item);
       });
-      await batch3.commit();
+      await withTimeout(batch3.commit());
     }
     el.textContent = '匯入完成！';
     loadAllData();
   }catch(e){
-    el.textContent = '匯入失敗：' + e.message;
+    el.textContent = '匯入失敗：' + friendlyError(e);
   }
 });
 </script>
 <script>
 /* ================= Data loading ================= */
 async function loadAllData(){
-  const [clientsSnap, ratesSnap, mediaSnap, specSnap] = await Promise.all([
-    db.collection('clients').get(),
-    db.collection('clientMediaRates').get(),
-    db.collection('mediaComponents').get(),
-    db.collection('creativeSpecs').get(),
-  ]);
+  let clientsSnap, ratesSnap, mediaSnap, specSnap;
+  try{
+    [clientsSnap, ratesSnap, mediaSnap, specSnap] = await withTimeout(Promise.all([
+      db.collection('clients').get(),
+      db.collection('clientMediaRates').get(),
+      db.collection('mediaComponents').get(),
+      db.collection('creativeSpecs').get(),
+    ]));
+  }catch(e){
+    statusBox(document.getElementById('connectStatus'), '讀取資料失敗：' + friendlyError(e), 'bad');
+    return;
+  }
   CLIENTS = clientsSnap.docs.map(d=>({id:d.id, ...d.data()}));
   CLIENT_RATES = ratesSnap.docs.map(d=>({id:d.id, ...d.data()}));
   MEDIA_COMPONENTS = mediaSnap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -391,17 +422,30 @@ function renderClients(){
     '<tr><td>'+escapeHtml(c.name)+'</td><td><button class="btn ghost small" onclick="deleteClient(\''+c.id+'\')">刪除</button></td></tr>'
   ).join('');
 }
-document.getElementById('btnAddClient').addEventListener('click', async ()=>{
+document.getElementById('btnAddClient').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
   const name = document.getElementById('newClientName').value.trim();
   if(!name) return;
-  await db.collection('clients').add({name});
-  document.getElementById('newClientName').value = '';
-  loadAllData();
+  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
+  btn.disabled = true; btn.textContent = '新增中...';
+  try{
+    await withTimeout(db.collection('clients').add({name}));
+    document.getElementById('newClientName').value = '';
+    await loadAllData();
+  }catch(e){
+    alert('新增客戶失敗：' + friendlyError(e));
+  }finally{
+    btn.disabled = false; btn.textContent = '新增客戶';
+  }
 });
 async function deleteClient(id){
   if(!confirm('確定刪除此客戶？相關 AC% 對照不會自動刪除。')) return;
-  await db.collection('clients').doc(id).delete();
-  loadAllData();
+  try{
+    await withTimeout(db.collection('clients').doc(id).delete());
+    loadAllData();
+  }catch(e){
+    alert('刪除失敗：' + friendlyError(e));
+  }
 }
 
 /* ================= Rates tab ================= */
@@ -425,22 +469,35 @@ function renderRateTable(){
       '<td><button class="btn ghost small" onclick="deleteRate(\''+r.id+'\')">刪除</button></td></tr>';
   }).join('');
 }
-document.getElementById('btnSaveRate').addEventListener('click', async ()=>{
+document.getElementById('btnSaveRate').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
   const clientId = document.getElementById('rateClientSelect').value;
   const mediaId = document.getElementById('rateMediaSelect').value;
   const val = parseFloat(document.getElementById('rateValueInput').value);
   if(!clientId || !mediaId || isNaN(val)) return;
+  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
   const client = CLIENTS.find(c=>c.id===clientId);
   const docId = clientId + '_' + mediaId;
-  await db.collection('clientMediaRates').doc(docId).set({
-    client: client ? client.name : '', clientId, mediaComponentId: mediaId, acRatePercent: val
-  });
-  document.getElementById('rateValueInput').value = '';
-  loadAllData();
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try{
+    await withTimeout(db.collection('clientMediaRates').doc(docId).set({
+      client: client ? client.name : '', clientId, mediaComponentId: mediaId, acRatePercent: val
+    }));
+    document.getElementById('rateValueInput').value = '';
+    await loadAllData();
+  }catch(e){
+    alert('儲存費率失敗：' + friendlyError(e));
+  }finally{
+    btn.disabled = false; btn.textContent = '儲存費率';
+  }
 });
 async function deleteRate(id){
-  await db.collection('clientMediaRates').doc(id).delete();
-  loadAllData();
+  try{
+    await withTimeout(db.collection('clientMediaRates').doc(id).delete());
+    loadAllData();
+  }catch(e){
+    alert('刪除失敗：' + friendlyError(e));
+  }
 }
 
 function escapeHtml(s){
@@ -674,7 +731,8 @@ function renderSpecLibTable(){
   html += '</tbody></table>';
   wrap.innerHTML = html;
 }
-document.getElementById('btnSaveSpec').addEventListener('click', async ()=>{
+document.getElementById('btnSaveSpec').addEventListener('click', async (e)=>{
+  const btn = e.currentTarget;
   const platform = document.getElementById('specPlatform').value.trim();
   const adFormat = document.getElementById('specFormat').value.trim();
   const field = document.getElementById('specField').value.trim();
@@ -683,15 +741,27 @@ document.getElementById('btnSaveSpec').addEventListener('click', async ()=>{
   const sourceUrl = document.getElementById('specSourceUrl').value.trim();
   const lastVerified = document.getElementById('specLastVerified').value;
   if(!platform || !adFormat || !field || !content){ alert('平台、形式、欄位、內容為必填'); return; }
+  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
   const id = 'cs_' + Date.now();
-  await db.collection('creativeSpecs').doc(id).set({platform, adFormat, field, content, notes, sourceUrl, lastVerified});
-  ['specPlatform','specFormat','specField','specContent','specNotes','specSourceUrl','specLastVerified'].forEach(i=>document.getElementById(i).value='');
-  loadAllData();
+  btn.disabled = true; btn.textContent = '儲存中...';
+  try{
+    await withTimeout(db.collection('creativeSpecs').doc(id).set({platform, adFormat, field, content, notes, sourceUrl, lastVerified}));
+    ['specPlatform','specFormat','specField','specContent','specNotes','specSourceUrl','specLastVerified'].forEach(i=>document.getElementById(i).value='');
+    await loadAllData();
+  }catch(e){
+    alert('儲存規範失敗：' + friendlyError(e));
+  }finally{
+    btn.disabled = false; btn.textContent = '儲存規範';
+  }
 });
 async function deleteSpec(id){
   if(!confirm('確定刪除此規範條目？')) return;
-  await db.collection('creativeSpecs').doc(id).delete();
-  loadAllData();
+  try{
+    await withTimeout(db.collection('creativeSpecs').doc(id).delete());
+    loadAllData();
+  }catch(e){
+    alert('刪除失敗：' + friendlyError(e));
+  }
 }
 
 /* ================= Init ================= */

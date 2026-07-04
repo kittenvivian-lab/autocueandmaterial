@@ -3,159 +3,534 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>媒體工具箱 | Media Cue &amp; 素材規範產生器</title>
+<title>媒體工具箱 Pro | Media Cue & 素材規範產生器</title>
+<!-- 引入 Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- 引入 Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- 引入 SheetJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <style>
-  :root{
-    --ink:#1c2b33;
-    --paper:#f6f4ee;
-    --line:#d8d2c2;
-    --accent:#2f6f5e;
-    --accent-soft:#e4efe9;
-    --warn:#b5542a;
-    --muted:#6b6455;
-    --card:#ffffff;
-    font-family:-apple-system,"PingFang TC","Microsoft JhengHei",Segoe UI,sans-serif;
+  :root {
+    /* 現代化色彩計畫 */
+    --primary: #4F46E5;       /* 靛藍色，主操作 */
+    --primary-hover: #4338CA;
+    --primary-soft: #EEF2FF;
+    --text-main: #1F2937;      /* 深灰黑，主文字 */
+    --text-muted: #6B7280;     /* 灰，次要文字 */
+    --bg-body: #F9FAFB;        /* 極淡灰，頁面背景 */
+    --bg-card: #FFFFFF;        /* 白，卡片背景 */
+    --border-color: #E5E7EB;   /* 邊框灰 */
+    --success: #10B981;
+    --success-soft: #D1FAE5;
+    --danger: #EF4444;
+    --danger-soft: #FEE2E2;
+    --warning: #F59E0B;
+    --warning-soft: #FEF3C7;
+    
+    /* 陰影與圓角 */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --radius-md: 8px;
+    --radius-lg: 12px;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--paper);color:var(--ink);}
-  header{padding:20px 28px 0;}
-  h1{font-size:20px;margin:0 0 2px;letter-spacing:.2px;}
-  .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
-  nav{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 28px;flex-wrap:wrap;}
-  nav button{
-    background:none;border:none;padding:10px 16px;font-size:14px;color:var(--muted);
-    cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;
+
+  * { box-sizing: border-box; }
+  
+  body {
+    margin: 0;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
   }
-  nav button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-  main{padding:22px 28px 60px;max-width:1180px;margin:0 auto;}
-  .panel{display:none;}
-  .panel.active{display:block;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px;}
-  .card h2{font-size:15px;margin:0 0 12px;}
-  .card h3{font-size:13px;margin:14px 0 8px;color:var(--muted);}
-  label{font-size:12.5px;color:var(--muted);display:block;margin-bottom:4px;}
-  input[type=text],input[type=number],input[type=date],select,textarea{
-    width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;
-    font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink);
+
+  /* 頂部導航區塊 */
+  .app-header {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-sm);
   }
-  textarea{resize:vertical;}
-  .row{display:flex;gap:10px;flex-wrap:wrap;}
-  .row > div{flex:1;min-width:140px;}
-  button.btn{
-    background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;
-    font-size:13.5px;cursor:pointer;font-family:inherit;
+
+  .header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 32px 0;
   }
-  button.btn.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent);}
-  button.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line);}
-  button.btn.small{padding:4px 10px;font-size:12px;}
-  button.btn:disabled{opacity:.5;cursor:not-allowed;}
-  table{width:100%;border-collapse:collapse;font-size:13px;}
-  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top;}
-  th{color:var(--muted);font-weight:600;font-size:12px;background:#faf9f5;}
-  tr:hover td{background:#fbfaf6;}
-  .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:1px 8px;
-    border-radius:10px;font-size:11.5px;margin-right:4px;}
-  .status{font-size:12.5px;padding:8px 12px;border-radius:6px;margin-bottom:14px;}
-  .status.ok{background:#e4efe9;color:var(--accent);}
-  .status.bad{background:#fbe9e2;color:var(--warn);}
-  .status.info{background:#eef1f5;color:#41586b;}
-  .group-title{font-size:13px;font-weight:600;margin:16px 0 6px;color:var(--ink);
-    border-left:3px solid var(--accent);padding-left:8px;}
-  .checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);}
-  .checklist-item input[type=checkbox]{margin-top:4px;}
-  .checklist-item .meta{font-size:12px;color:var(--muted);margin-top:2px;}
-  .inline-fields{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
-  .inline-fields > div{width:120px;}
-  .pill-rate{font-size:11.5px;padding:2px 7px;border-radius:8px;background:#fff2e4;color:var(--warn);}
-  .empty{color:var(--muted);font-size:13px;padding:16px 0;text-align:center;}
-  .footer-note{color:var(--muted);font-size:11.5px;margin-top:24px;line-height:1.6;}
-  .totalbar{display:flex;justify-content:space-between;align-items:center;background:var(--accent-soft);
-    padding:10px 14px;border-radius:8px;margin-top:12px;font-size:13.5px;}
-  .totalbar b{font-size:16px;color:var(--accent);}
-  a{color:var(--accent);}
+
+  .app-title {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+  }
+
+  .app-subtitle {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 400;
+  }
+
+  /* 頁籤導航 */
+  nav {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    overflow-x: auto;
+    scrollbar-width: none; /* Firefox */
+  }
+  nav::-webkit-scrollbar { display: none; } /* Chrome */
+
+  nav button {
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+
+  nav button:hover {
+    color: var(--text-main);
+  }
+
+  nav button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  /* 主要內容區 */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+    min-height: calc(100vh - 120px);
+  }
+
+  .panel { display: none; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 卡片設計 */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card-header {
+    margin-bottom: 20px;
+  }
+
+  .card h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: var(--text-main);
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 24px 0 12px;
+    color: var(--text-main);
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  /* 表單元素 */
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-main);
+    margin-bottom: 6px;
+  }
+
+  input[type=text], input[type=number], input[type=date], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-family: inherit;
+    background-color: #fff;
+    color: var(--text-main);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #9CA3AF;
+  }
+
+  /* 網格佈局 */
+  .grid-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .flex-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  /* 按鈕設計 */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary);
+    color: #fff;
+    border: 1px solid transparent;
+    padding: 10px 18px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .btn:hover { background-color: var(--primary-hover); }
+  
+  .btn.secondary {
+    background-color: #fff;
+    color: var(--text-main);
+    border-color: var(--border-color);
+  }
+  .btn.secondary:hover { background-color: var(--bg-body); border-color: #D1D5DB; }
+
+  .btn.ghost {
+    background-color: transparent;
+    color: var(--text-muted);
+  }
+  .btn.ghost:hover { background-color: var(--bg-body); color: var(--text-main); }
+  
+  .btn.danger { color: var(--danger); }
+  .btn.danger:hover { background-color: var(--danger-soft); }
+
+  .btn.small { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* 表格設計 */
+  .table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-top: 16px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff;
+  }
+
+  th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  th {
+    background-color: #F9FAFB;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background-color: #F9FAFB; }
+
+  /* 標籤與狀態 */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--bg-body);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+  }
+
+  .pill-rate {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--warning-soft);
+    color: #B45309; /* 深橘色 */
+  }
+
+  .status-box {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-box.ok { background: var(--success-soft); color: #065F46; border: 1px solid #A7F3D0; }
+  .status-box.error { background: var(--danger-soft); color: #991B1B; border: 1px solid #FECACA; }
+  .status-box.info { background: var(--primary-soft); color: #3730A3; border: 1px solid #C7D2FE; }
+
+  /* 媒體/規範 勾選清單 (Grid 佈局) */
+  .checklist-group {
+    margin-bottom: 24px;
+  }
+  
+  .group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-color);
+    display: inline-block;
+  }
+
+  .checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 12px;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+  }
+
+  .checklist-item:hover {
+    border-color: #D1D5DB;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .checklist-item input[type=checkbox] {
+    margin-top: 4px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+
+  .item-content { flex: 1; min-width: 0; }
+  .item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .item-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* 空狀態 */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    background: #F9FAFB;
+    border-radius: var(--radius-md);
+    border: 1px dashed #D1D5DB;
+    font-size: 14px;
+  }
+
+  /* 總計結算條 */
+  .total-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--primary-soft);
+    border: 1px solid #C7D2FE;
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    margin-top: 24px;
+    margin-bottom: 24px;
+  }
+  .total-bar-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #3730A3;
+  }
+  .total-bar-amount {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    font-family: 'Inter', sans-serif; /* 數字用 Inter 更好看 */
+  }
+
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border-color);
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>媒體工具箱</h1>
-  <div class="sub">Media Cue 產生器 ＋ 素材規範產生器 — 獨立工具，資料存於你自己的 Firebase 專案</div>
-</header>
-<nav>
-  <button data-tab="setup" class="active">① Firebase 連線設定</button>
-  <button data-tab="rates">② 客戶與 AC% 費率</button>
-  <button data-tab="mediacue">③ Media Cue 產生器</button>
-  <button data-tab="specs">④ 素材規範產生器</button>
-  <button data-tab="specslib">⑤ 規範庫管理</button>
-</nav>
-<main>
 
+<header class="app-header">
+  <div class="header-content">
+    <div class="app-title">
+      <h1>媒體工具箱 Pro</h1>
+      <span class="app-subtitle">獨立運作的 Media Cue & 素材規範自動化產生器</span>
+    </div>
+    <nav>
+      <button data-tab="setup" class="active">設定連線</button>
+      <button data-tab="rates">客戶與 AC% 管理</button>
+      <button data-tab="mediacue">Media Cue 產生器</button>
+      <button data-tab="specs">素材規範產生器</button>
+      <button data-tab="specslib">規範庫管理</button>
+    </nav>
+  </div>
+</header>
+
+<main>
   <!-- ============ SETUP ============ -->
   <div class="panel active" id="panel-setup">
     <div class="card">
-      <h2>Step 1・連接你自己的 Firebase 專案</h2>
-      <p class="sub" style="margin-top:-6px">
-        這個工具的資料（客戶清單、AC%費率、媒體元件庫、素材規範庫）都存在你自己申請的 Firebase 專案裡，跟 Planner OS 完全分開。
-        第一次使用請到 <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a> 建立新專案 → 啟用 Firestore Database →
-        專案設定裡取得「Web App 設定」，把整段 config 貼在下面。設定會存在瀏覽器本機（localStorage），下次開啟不用重貼。
-      </p>
-      <label>貼上 Firebase config（物件格式，例如 { "apiKey": "...", "projectId": "...", ... }）</label>
-      <textarea id="fbConfigInput" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"...","storageBucket":"...","messagingSenderId":"...","appId":"..."}'></textarea>
-      <div style="margin-top:10px;display:flex;gap:8px;">
-        <button class="btn" id="btnConnect">連接 Firebase</button>
-        <button class="btn ghost" id="btnClearConfig">清除本機設定</button>
+      <div class="card-header">
+        <h2>Step 1・連接 Firebase 資料庫</h2>
+        <p class="card-desc">資料存於你自己的 Firebase 專案，確保資料獨立與安全。首次使用請貼上 Firebase Web App Config。</p>
       </div>
-      <div id="connectStatus" style="margin-top:12px;"></div>
+      <label>Firebase Config (JSON 格式)</label>
+      <textarea id="fbConfigInput" rows="5" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "..."}'></textarea>
+      <div class="flex-row" style="margin-top:16px;">
+        <button class="btn" id="btnConnect">連線資料庫</button>
+        <button class="btn ghost" id="btnClearConfig">清除設定</button>
+      </div>
+      <div id="connectStatus"></div>
     </div>
 
     <div class="card">
-      <h2>Step 2・匯入起始資料</h2>
-      <p class="sub" style="margin-top:-6px">
-        已經根據你上傳的 Alinamin EXG 0727 New HCP 檔案整理了一份起始資料：<b>35 筆媒體元件</b>、<b>28 筆客戶-媒體 AC% 對照</b>、<b>21 筆素材規範</b>。
-        按下方按鈕即可寫入你的 Firebase（只會在對應集合是空的時候才寫入，不會覆蓋掉你之後新增的內容）。
-      </p>
-      <button class="btn secondary" id="btnSeed" disabled>匯入起始資料</button>
-      <span id="seedStatus" style="margin-left:10px;font-size:12.5px;color:var(--muted);"></span>
+      <div class="card-header">
+        <h2>Step 2・匯入預設模板資料 (可選)</h2>
+        <p class="card-desc">如果你是第一次建立專案，可以點擊下方按鈕，匯入根據「Alinamin EXG」專案整理的預設媒體元件與素材規範，省去手動建立的麻煩。</p>
+      </div>
+      <div class="flex-row">
+        <button class="btn secondary" id="btnSeed" disabled>匯入預設模板</button>
+        <span id="seedStatus" style="font-size:13px; color:var(--text-muted);"></span>
+      </div>
     </div>
   </div>
 
   <!-- ============ RATES ============ -->
   <div class="panel" id="panel-rates">
     <div class="card">
-      <h2>客戶清單</h2>
-      <div class="row">
-        <div><label>新增客戶名稱</label><input type="text" id="newClientName" placeholder="例如：Alinamin EXG"></div>
-        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnAddClient">新增客戶</button></div>
+      <div class="card-header">
+        <h2>客戶清單管理</h2>
       </div>
-      <table style="margin-top:12px;">
-        <thead><tr><th>客戶</th><th style="width:80px;">操作</th></tr></thead>
-        <tbody id="clientTableBody"></tbody>
-      </table>
+      <div class="flex-row">
+        <div style="flex:1; min-width:200px;">
+          <input type="text" id="newClientName" placeholder="輸入新客戶或專案名稱 (例：Alinamin EXG)">
+        </div>
+        <button class="btn secondary" id="btnAddClient">新增客戶</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>客戶名稱</th><th style="width:80px; text-align:center;">操作</th></tr></thead>
+          <tbody id="clientTableBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="card">
-      <h2>客戶 × 媒體 AC% 對照</h2>
-      <p class="sub" style="margin-top:-6px">同一個媒體，不同客戶收的 AC% 可能不一樣。這裡是唯一需要維護 AC% 的地方，Media Cue 產生器會自動從這裡帶入。</p>
-      <div class="row">
+      <div class="card-header">
+        <h2>客戶專屬 AC% 費率設定</h2>
+        <p class="card-desc">不同客戶針對同一媒體可能有不同的 Agency Commission (AC%)，請在此設定。Media Cue 產生時會自動帶入。</p>
+      </div>
+      <div class="grid-row">
         <div>
-          <label>選擇客戶</label>
+          <label>選擇要設定的客戶</label>
           <select id="rateClientSelect"></select>
         </div>
       </div>
-      <table style="margin-top:12px;">
-        <thead><tr><th>媒體元件</th><th style="width:120px;">AC%</th><th style="width:80px;">操作</th></tr></thead>
-        <tbody id="rateTableBody"></tbody>
-      </table>
-      <h3>新增／更新單筆費率</h3>
-      <div class="row">
-        <div>
-          <label>媒體元件</label>
+      
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>媒體 / 版位名稱</th><th style="width:100px;">AC (%)</th><th style="width:80px; text-align:center;">操作</th></tr></thead>
+          <tbody id="rateTableBody"></tbody>
+        </table>
+      </div>
+
+      <h3>新增或修改費率</h3>
+      <div class="flex-row">
+        <div style="flex:2; min-width:200px;">
+          <label>選擇媒體元件</label>
           <select id="rateMediaSelect"></select>
         </div>
-        <div><label>AC%（輸入數字，例如 4 代表 4%）</label><input type="number" id="rateValueInput" step="0.1"></div>
-        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnSaveRate">儲存費率</button></div>
+        <div style="flex:1; min-width:120px;">
+          <label>AC% 數值</label>
+          <input type="number" id="rateValueInput" step="0.1" placeholder="例如: 4 或 10">
+        </div>
+        <button class="btn secondary" id="btnSaveRate">儲存設定</button>
       </div>
     </div>
   </div>
@@ -163,34 +538,50 @@
   <!-- ============ MEDIA CUE GENERATOR ============ -->
   <div class="panel" id="panel-mediacue">
     <div class="card">
-      <h2>Campaign 基本資訊</h2>
-      <div class="row">
-        <div><label>Agency</label><input type="text" id="mcAgency" value="Starcom"></div>
-        <div><label>客戶 / Campaign Owner</label><select id="mcClient"></select></div>
-        <div><label>Campaign 名稱</label><input type="text" id="mcCampaignName" placeholder="例如：Alinamin EXG 0727 New HCP"></div>
+      <div class="card-header">
+        <h2>1. Campaign 基本資訊</h2>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <div><label>開始日期</label><input type="date" id="mcStartDate"></div>
-        <div><label>結束日期</label><input type="date" id="mcEndDate"></div>
-        <div><label>Campaign Owner 姓名</label><input type="text" id="mcOwner"></div>
+      <div class="grid-row">
+        <div><label>代理商 (Agency)</label><input type="text" id="mcAgency" value="Starcom"></div>
+        <div><label>客戶 / 專案</label><select id="mcClient"></select></div>
+        <div><label>活動名稱 (Campaign Name)</label><input type="text" id="mcCampaignName" placeholder="Alinamin EXG 0727 New HCP"></div>
+      </div>
+      <div class="grid-row">
+        <div><label>走期開始</label><input type="date" id="mcStartDate"></div>
+        <div><label>走期結束</label><input type="date" id="mcEndDate"></div>
+        <div><label>負責企劃 (Owner)</label><input type="text" id="mcOwner" placeholder="Your Name"></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>選擇這次要用的媒體元件</h2>
-      <p class="sub" style="margin-top:-6px">勾選後會自動帶出對應的 AC%（依你剛選的客戶）與需要的 KPI 欄位，你只要填金額。</p>
-      <div id="mediaChecklist"><div class="empty">請先在①連接 Firebase 並匯入資料</div></div>
+      <div class="card-header">
+        <h2>2. 挑選媒體版位</h2>
+        <p class="card-desc">從資料庫勾選本次活動需要的版位，系統會自動帶入對應的購買模式與 AC%。</p>
+      </div>
+      <div id="mediaChecklist">
+        <div class="empty-state">請先於「設定連線」完成資料庫連接。</div>
+      </div>
     </div>
 
     <div class="card">
-      <h2>已選媒體 — 填入金額</h2>
-      <div id="selectedMediaRows"><div class="empty">尚未勾選任何媒體元件</div></div>
-      <div class="totalbar">
-        <span>Total Budget 合計（含 AC）</span>
-        <b id="mcGrandTotal">NT$ 0</b>
+      <div class="card-header">
+        <h2>3. 填寫預算與數量</h2>
+        <p class="card-desc">依據勾選的媒體填入單價與數量，或直接填入 Media Price，系統將自動計算包含 AC 的 Total Budget。</p>
       </div>
-      <div style="margin-top:14px;">
-        <button class="btn" id="btnExportMediaCue">匯出 Media Cue（.xlsx）</button>
+      <div id="selectedMediaRows">
+        <div class="empty-state">尚未勾選任何媒體版位。</div>
+      </div>
+      
+      <div class="total-bar">
+        <div class="total-bar-label">Total Budget 總預算 (含 AC)</div>
+        <div class="total-bar-amount" id="mcGrandTotal">NT$ 0</div>
+      </div>
+      
+      <div style="text-align: right;">
+        <button class="btn" id="btnExportMediaCue">
+          <svg style="width:16px;height:16px;margin-right:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          匯出 Media Cue (.xlsx)
+        </button>
       </div>
     </div>
   </div>
@@ -198,15 +589,30 @@
   <!-- ============ SPEC GENERATOR ============ -->
   <div class="panel" id="panel-specs">
     <div class="card">
-      <h2>Campaign 名稱</h2>
-      <input type="text" id="specCampaignName" placeholder="例如：Alinamin EXG 0727 New HCP">
+      <div class="card-header">
+        <h2>匯出設定</h2>
+      </div>
+      <div class="grid-row">
+        <div>
+          <label>Campaign 名稱 (作為檔案名稱)</label>
+          <input type="text" id="specCampaignName" placeholder="例如：Alinamin EXG 0727 New HCP">
+        </div>
+      </div>
     </div>
     <div class="card">
-      <h2>勾選這次案子會用到的版位／規範</h2>
-      <p class="sub" style="margin-top:-6px">規範庫是平台通用的（不分客戶），勾選後直接組成新的素材規範表，不用再翻舊檔案找。</p>
-      <div id="specChecklist"><div class="empty">請先在①連接 Firebase 並匯入資料</div></div>
-      <div style="margin-top:14px;">
-        <button class="btn" id="btnExportSpecs">匯出素材規範表（.xlsx）</button>
+      <div class="card-header">
+        <h2>挑選所需素材規範</h2>
+        <p class="card-desc">勾選本次活動會用到的媒體版位，系統將自動從規範庫抓取最新規格，合併為一份完整的 Excel 表格。</p>
+      </div>
+      <div id="specChecklist">
+        <div class="empty-state">請先於「設定連線」完成資料庫連接。</div>
+      </div>
+      
+      <div style="margin-top:24px; text-align: right;">
+        <button class="btn" id="btnExportSpecs">
+          <svg style="width:16px;height:16px;margin-right:8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          匯出素材規範表 (.xlsx)
+        </button>
       </div>
     </div>
   </div>
@@ -214,48 +620,61 @@
   <!-- ============ SPEC LIBRARY MANAGEMENT ============ -->
   <div class="panel" id="panel-specslib">
     <div class="card">
-      <h2>新增／編輯規範條目</h2>
-      <div class="row">
-        <div><label>平台</label><input type="text" id="specPlatform" placeholder="例如：Meta"></div>
-        <div><label>廣告形式／版位</label><input type="text" id="specFormat" placeholder="例如：Newsfeed-影片"></div>
-        <div><label>欄位</label><input type="text" id="specField" placeholder="例如：素材規範"></div>
+      <div class="card-header">
+        <h2>新增 / 編輯規範條目</h2>
+        <p class="card-desc">在此更新的規範，將適用於未來所有產出的素材規範表。</p>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <div style="flex:2;"><label>規範內容</label><textarea id="specContent" rows="2"></textarea></div>
-        <div style="flex:2;"><label>注意事項</label><textarea id="specNotes" rows="2"></textarea></div>
+      <div class="grid-row">
+        <div><label>媒體平台</label><input type="text" id="specPlatform" placeholder="例如：Meta, Google, LINE"></div>
+        <div><label>廣告形式 / 版位</label><input type="text" id="specFormat" placeholder="例如：Newsfeed-單圖"></div>
+        <div><label>規範欄位名稱</label><input type="text" id="specField" placeholder="例如：尺寸限制、文案字數"></div>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <div><label>官方來源連結</label><input type="text" id="specSourceUrl" placeholder="https://..."></div>
+      <div class="grid-row" style="grid-template-columns: 1fr 1fr;">
+        <div><label>詳細規範內容</label><textarea id="specContent" rows="3" placeholder="具體尺寸、格式、字數限制..."></textarea></div>
+        <div><label>備註 / 注意事項</label><textarea id="specNotes" rows="3" placeholder="進稿表單提醒、特殊限制..."></textarea></div>
+      </div>
+      <div class="grid-row">
+        <div><label>官方來源連結 (選填)</label><input type="text" id="specSourceUrl" placeholder="https://..."></div>
         <div><label>最後確認日期</label><input type="date" id="specLastVerified"></div>
-        <div style="flex:0 0 auto;align-self:flex-end;"><button class="btn" id="btnSaveSpec">儲存規範</button></div>
+      </div>
+      <div style="text-align: right; margin-top: 16px;">
+        <button class="btn secondary" id="btnSaveSpec">新增至資料庫</button>
       </div>
     </div>
+    
     <div class="card">
-      <h2>規範庫總覽</h2>
-      <div id="specLibTable"><div class="empty">尚未連接資料</div></div>
+      <div class="card-header">
+        <h2>現有規範庫總覽</h2>
+      </div>
+      <div class="table-wrapper" id="specLibTable">
+        <div class="empty-state">尚未連接資料庫或無資料。</div>
+      </div>
     </div>
   </div>
 
 </main>
-<div class="footer-note">
-  媒體工具箱・獨立工具，與 Planner OS 分開維運。資料存放於你自己的 Firebase 專案（Firestore），可隨時在 Firebase Console 檢視或匯出備份。
-</div>
+
+<footer class="footer">
+  媒體工具箱 Pro v2.0 &bull; Designed for Media Planners
+</footer>
+
 <script>
+// ==================== 預設種子資料 ====================
+// 保持原有的 SEED_MEDIA_COMPONENTS, SEED_CLIENT_RATES, SEED_CREATIVE_SPECS 陣列內容不變
 const SEED_MEDIA_COMPONENTS = [{"id": "mc_9", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": "TV+MOD", "position": "Terr. + Cable", "adFormat": "Video", "buyingModel": "CPRP", "unitPriceDefault": 1240, "materialNote": "New HCP 25\"", "kpiFieldsNeeded": ["Est.Reach"], "label": "TV+MOD / Terr. + Cable"}, {"id": "mc_10", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "快線傳輸", "adFormat": "-", "buyingModel": "支", "unitPriceDefault": 20000, "materialNote": "=I9", "kpiFieldsNeeded": [], "label": "快線傳輸"}, {"id": "mc_11", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": "APEX Guarantee-YouTube", "position": "VRC 2.0 (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 80, "materialNote": "New HCP 25\"\n(橫+直)", "kpiFieldsNeeded": ["Est.Imp"], "label": "APEX Guarantee-YouTube / VRC 2.0 (PC / MB / CTV)"}, {"id": "mc_13", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 180, "materialNote": "New HCP 25\"\n(橫)", "kpiFieldsNeeded": ["Est.Imp"], "label": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)"}, {"id": "mc_15", "objective": "廣度覆蓋 日常滲透", "media": "TV+OTV", "title": null, "position": "6s Bumper (PC / MB / CTV)", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 90, "materialNote": "New HCP 6\"\n(橫)", "kpiFieldsNeeded": ["Est.Imp"], "label": "6s Bumper (PC / MB / CTV)"}, {"id": "mc_17", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "中天新聞\nYouTube頻道", "position": "YT新聞職播資訊卡", "adFormat": "Video\nText", "buyingModel": "CPRP", "unitPriceDefault": 4500, "materialNote": "New HCP 25\"\nText", "kpiFieldsNeeded": ["Est.Views"], "label": "中天新聞 YouTube頻道 / YT新聞職播資訊卡"}, {"id": "mc_18", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "APEX Guarantee-\nFacebook+Instagram", "position": "R&F Newsfeed/Instream/Reels/Story (PC+MB)", "adFormat": "Video Post", "buyingModel": "CPM", "unitPriceDefault": 69, "materialNote": "New HCP 25\"", "kpiFieldsNeeded": ["Est.Reach", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- Facebook+Instagram / R&F Newsfeed/Instream/Reels/Story (PC+MB)"}, {"id": "mc_19", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": "LINE Today", "position": "Billboard Video", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": null, "materialNote": "=I18", "kpiFieldsNeeded": ["Est.Imp"], "label": "LINE Today / Billboard Video"}, {"id": "mc_20", "objective": "廣度覆蓋 日常滲透", "media": "Digital", "title": null, "position": "Scroller Sticky", "adFormat": "Banner", "buyingModel": "CPM", "unitPriceDefault": null, "materialNote": "KV Banner", "kpiFieldsNeeded": ["Est.Imp"], "label": "Scroller Sticky"}, {"id": "mc_21", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": "捷運", "position": "臺大醫院站", "adFormat": "月台貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "捷運 / 臺大醫院站"}, {"id": "mc_22", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "石牌站", "adFormat": "燈箱", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "石牌站"}, {"id": "mc_23", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "雙連站", "adFormat": "燈箱", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "雙連站"}, {"id": "mc_24", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": "公車", "position": "北部公車-大都會", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "公車 / 北部公車-大都會"}, {"id": "mc_25", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "北部公車-民營", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "北部公車-民營"}, {"id": "mc_26", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "台中公車", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "台中公車"}, {"id": "mc_27", "objective": "廣度覆蓋 日常滲透", "media": "OOH", "title": null, "position": "高雄公車", "adFormat": "車貼", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "Image", "kpiFieldsNeeded": [], "label": "高雄公車"}, {"id": "mc_28", "objective": "廣度覆蓋 日常滲透", "media": "PDOOH", "title": "全民健康視", "position": "診所/臺大醫院北護分院", "adFormat": "Video", "buyingModel": "Month", "unitPriceDefault": null, "materialNote": "=I19", "kpiFieldsNeeded": ["Est.Imp"], "label": "全民健康視 / 診所/臺大醫院北護分院"}, {"id": "mc_29", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-\nFacebook+Instagram", "position": "Newsfeed/Instream/Reels/Story (PC+MB)", "adFormat": "Video Post", "buyingModel": "CPLC", "unitPriceDefault": 12, "materialNote": "=I18", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- Facebook+Instagram / Newsfeed/Instream/Reels/Story (PC+MB)"}, {"id": "mc_31", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": "KOL Post", "buyingModel": "CPM", "unitPriceDefault": 65, "materialNote": "KOL內容擴散\n⼩花藥師", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row31"}, {"id": "mc_32", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": null, "buyingModel": "CPM", "unitPriceDefault": 65, "materialNote": "KOL內容擴散\n志明⼤叔", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row32"}, {"id": "mc_33", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-\nLINE LAP", "position": "LINE Ad Plateform", "adFormat": "Video", "buyingModel": "CPM", "unitPriceDefault": 35, "materialNote": "=I29", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "APEX Guarantee- LINE LAP / LINE Ad Plateform"}, {"id": "mc_34", "objective": "數據驅動 精準攔截", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "CPC", "unitPriceDefault": 7, "materialNote": "=I20", "kpiFieldsNeeded": ["Est.Imp", "Est.CTR%", "Est.Clicks"], "label": "row34"}, {"id": "mc_35", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-Google RDA", "position": "Google Display Network", "adFormat": "Banner", "buyingModel": "CPC", "unitPriceDefault": 3.5, "materialNote": "New HCP 25\"\nBanner", "kpiFieldsNeeded": ["Est.Clicks"], "label": "APEX Guarantee-Google RDA / Google Display Network"}, {"id": "mc_36", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "串接Google Trend訊號", "position": "-", "adFormat": "-", "buyingModel": "次", "unitPriceDefault": 50000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "串接Google Trend訊號 / -"}, {"id": "mc_37", "objective": "數據驅動 精準攔截", "media": "Digital", "title": "APEX Guarantee-Publicis ID", "position": "電信數據", "adFormat": "-", "buyingModel": "次", "unitPriceDefault": 180000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "APEX Guarantee-Publicis ID / 電信數據"}, {"id": "mc_38", "objective": "深植專業信賴", "media": "Digital", "title": "早安健康", "position": "早安健康官網", "adFormat": "廣編", "buyingModel": "篇", "unitPriceDefault": 150000, "materialNote": "-", "kpiFieldsNeeded": ["Est.Views"], "label": "早安健康 / 早安健康官網"}, {"id": "mc_39", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": ["Est.Imp"], "label": "row39"}, {"id": "mc_40", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "早安健康手機版", "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": 234000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "早安健康手機版"}, {"id": "mc_41", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": null, "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": [], "label": "row41"}, {"id": "mc_42", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "LINE Today健康", "adFormat": "Banner", "buyingModel": "天", "unitPriceDefault": null, "materialNote": "-", "kpiFieldsNeeded": [], "label": "LINE Today健康"}, {"id": "mc_43", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "早安健康IG", "adFormat": "Photo Post", "buyingModel": "篇", "unitPriceDefault": 50000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "早安健康IG"}, {"id": "mc_44", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "新聞廣編聯播", "adFormat": "-", "buyingModel": "間", "unitPriceDefault": 30000, "materialNote": "-", "kpiFieldsNeeded": [], "label": "新聞廣編聯播"}, {"id": "mc_45", "objective": "深植專業信賴", "media": "Digital", "title": "JAG", "position": "LINE Viral", "adFormat": "Photo+Text", "buyingModel": "CPS", "unitPriceDefault": 48, "materialNote": "早安健康圖+廣編連結", "kpiFieldsNeeded": ["Est.Imp"], "label": "JAG / LINE Viral"}, {"id": "mc_46", "objective": "深植專業信賴", "media": "Digital", "title": "亞洲指標", "position": "小花藥師花逸修", "adFormat": "Video", "buyingModel": "Packge", "unitPriceDefault": 150000, "materialNote": "IG\nVideo", "kpiFieldsNeeded": [], "label": "亞洲指標 / 小花藥師花逸修"}, {"id": "mc_47", "objective": "深植專業信賴", "media": "Digital", "title": null, "position": "志明大叔活力Go", "adFormat": "Video", "buyingModel": "Packge", "unitPriceDefault": 225000, "materialNote": "FB\nVideo", "kpiFieldsNeeded": [], "label": "志明大叔活力Go"}];
 const SEED_CLIENT_RATES = [{"client": "Alinamin EXG", "mediaComponentId": "mc_9", "label": "TV+MOD / Terr. + Cable", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_10", "label": "快線傳輸", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_11", "label": "APEX Guarantee-YouTube / VRC 2.0 (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_13", "label": "標準不可略廣告 Non-Skippable 15s (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_15", "label": "6s Bumper (PC / MB / CTV)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_17", "label": "中天新聞 YouTube頻道 / YT新聞職播資訊卡", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_18", "label": "APEX Guarantee- Facebook+Instagram / R&F Newsfeed/Instream/Reels/Story (PC+MB)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_19", "label": "LINE Today / Billboard Video", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_20", "label": "Scroller Sticky", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_21", "label": "捷運 / 臺大醫院站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_22", "label": "石牌站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_23", "label": "雙連站", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_24", "label": "公車 / 北部公車-大都會", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_25", "label": "北部公車-民營", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_26", "label": "台中公車", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_27", "label": "高雄公車", "acRatePercent": 1}, {"client": "Alinamin EXG", "mediaComponentId": "mc_29", "label": "APEX Guarantee- Facebook+Instagram / Newsfeed/Instream/Reels/Story (PC+MB)", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_31", "label": "row31", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_32", "label": "row32", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_33", "label": "APEX Guarantee- LINE LAP / LINE Ad Plateform", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_34", "label": "row34", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_35", "label": "APEX Guarantee-Google RDA / Google Display Network", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_36", "label": "串接Google Trend訊號 / -", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_37", "label": "APEX Guarantee-Publicis ID / 電信數據", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_38", "label": "早安健康 / 早安健康官網", "acRatePercent": 10}, {"client": "Alinamin EXG", "mediaComponentId": "mc_45", "label": "JAG / LINE Viral", "acRatePercent": 4}, {"client": "Alinamin EXG", "mediaComponentId": "mc_46", "label": "亞洲指標 / 小花藥師花逸修", "acRatePercent": 10}, {"client": "Alinamin EXG", "mediaComponentId": "mc_47", "label": "志明大叔活力Go", "acRatePercent": 10}];
 const SEED_CREATIVE_SPECS = [{"id": "cs_tv_video", "platform": "TV/廣告快線", "adFormat": "TVC影片", "field": "影像格式(HD)", "content": "Format: Apple ProRes 422 或 Uncompressed AVI；Width 1920px, Height 1080px, Aspect 16:9 NTSC(1.0)，Frame rate 29.970fps 或 59.94fps，Field type: Progressive", "notes": "上線前一週上傳至廣告快線 ftp://ftp.tvcxpress.com.tw", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_tv_audio", "platform": "TV/廣告快線", "adFormat": "TVC影片", "field": "聲音格式", "content": "Format: PCM，Channel: 2 channels(Stereo)，Sampling rate: 48.0KHz，Bit depth: 16 bits，Volume: -10DB", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_trueview", "platform": "YouTube (APEX)", "adFormat": "TrueView / In-Stream", "field": "影片規範", "content": "可略過影片廣告，觀眾可於5秒後選擇略過；素材長度須至少12秒才能計入觀看次數；長度上限6分鐘", "notes": "直式與橫式影片可分別設定文案，直式露出於Trueview外的Shorts/動態內廣告，橫式露出於Trueview/動態內廣告", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_url", "platform": "YouTube (APEX)", "adFormat": "通用", "field": "到達網址/顯示網址", "content": "最終到達網址：使用者點擊後前往的頁面，須與廣告宣傳內容一致；顯示網址：須與到達網址網域一致", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_cta", "platform": "YouTube (APEX)", "adFormat": "通用", "field": "行動號召按鈕(選用)", "content": "行動號召文字最長10個半形字元(5個中文字)", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_shorts", "platform": "YouTube (APEX)", "adFormat": "Shorts", "field": "文案規範", "content": "行動號召最長10個半形字元(5個中文字)；廣告標題最長15個半形字元(7個中文字)，單行顯示", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_yt_banner", "platform": "YouTube (APEX)", "adFormat": "隨播橫幅廣告(選用)", "field": "尺寸規範", "content": "尺寸300x60像素，檔案大小上限150KB", "notes": "建議使用系統自動產生的圖片", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_zt_card", "platform": "中天資訊卡", "adFormat": "新聞跑馬燈", "field": "文案字數", "content": "20字內(含標點)，1組/天，整點新聞段每小時至少跑3次；遇重大新聞事件視狀況調整", "notes": "字數以 LENB 公式計算", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_zt_chat", "platform": "中天資訊卡", "adFormat": "置頂聊天室", "field": "文案字數", "content": "文案字數不限，清楚扼要即可", "notes": "需另提供短連結", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_newsfeed_single", "platform": "Meta", "adFormat": "Newsfeed(Post AD)-單圖", "field": "文案", "content": "125個字元，建議重要訊息置於前3行，避免隱藏於「更多」後", "notes": "若選Post AD需協助上稿並提供貼文連結與發布時間", "sourceUrl": "https://www.facebook.com/policies/ads", "lastVerified": ""}, {"id": "cs_meta_newsfeed_single_asset", "platform": "Meta", "adFormat": "Newsfeed(Post AD)-單圖", "field": "素材規範", "content": "檔案類型JPG/PNG(GIF需轉Video)，大小上限30MB，長寬比1.91:1到4:5，解析度至少1080x1080px", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_video", "platform": "Meta", "adFormat": "Newsfeed-影片", "field": "素材規範", "content": "檔案類型MP4/MOV/GIF，大小上限4GB，長寬比9:16到4:5；FB影片長度上限240分鐘，IG上限60分鐘", "notes": "需提供首圖/首卡截圖，解析度建議至少1080x1080px", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_meta_linkad_cta", "platform": "Meta", "adFormat": "Newsfeed(LinkAD)", "field": "行動呼籲按鈕", "content": "18選1：在相機中試用、了解詳情、立即應徵、立即申請、訂閱、觀看更多、立即註冊、來去逛逛、搶先預約、下載、聯絡我們、取得報價、發送訊息、查看菜單、馬上聽、預約時間、查詢播映時間、發送WhatsApp訊息", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineToday_billboard", "platform": "LINE Today", "adFormat": "Billboard Video", "field": "影片規範", "content": "16:9 HD高畫質，1280x720P以上解析度；影片長度60秒以內；檔案100MB以內，格式MP4", "notes": "進稿需填寫「LINE Today-Billboard Video(必填)」表單", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineToday_scroller", "platform": "LINE Today", "adFormat": "Scroller-Sticky", "field": "素材規範", "content": "KV Banner形式，詳見進稿表單規格", "notes": "進稿需填寫「LINE Today-Scroller(必填)」表單", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_video", "platform": "LINE LAP", "adFormat": "Video", "field": "影片規範", "content": "16:9，寬240-1920px，高135-1080px；格式MP4；檔案<1GB；解析度最高1080p(遞送時最高720p)；位元率最高8Mbps；長度最短5秒", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_banner", "platform": "LINE LAP", "adFormat": "Banner", "field": "尺寸規範", "content": "1200x628px 或 1080x1080px 或 600x400px，JPG/PNG<10MB", "notes": "依版位不同尺寸需求不同", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_lineLap_copy", "platform": "LINE LAP", "adFormat": "通用", "field": "文案", "content": "標題20字以內；說明75字以內(不限全形半形，空白算字元，不可分段)", "notes": "CTA需從指定選項擇一", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_title", "platform": "Google RDA", "adFormat": "通用", "field": "Title 1-5", "content": "30半形字元，中文15字，不能有驚嘆號", "notes": "字數以 LENB 公式計算", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_longheadline", "platform": "Google RDA", "adFormat": "通用", "field": "Long Headline", "content": "90半形字元，中文45字，不能有驚嘆號", "notes": "", "sourceUrl": "", "lastVerified": ""}, {"id": "cs_grda_desc", "platform": "Google RDA", "adFormat": "通用", "field": "Description 1-4", "content": "90半形字元，中文45字", "notes": "", "sourceUrl": "", "lastVerified": ""}];
 const SEED_CLIENT = "Alinamin EXG";
-</script>
-<script>
-/* ================= State ================= */
+
+// ==================== 狀態與邏輯 (不變) ====================
 let db = null;
 let firebaseApp = null;
 let CLIENTS = [];
-let CLIENT_RATES = [];   // {id, client, mediaComponentId, acRatePercent}
+let CLIENT_RATES = [];
 let MEDIA_COMPONENTS = [];
 let CREATIVE_SPECS = [];
 let selectedMediaIds = new Set();
-let mediaRowInputs = {}; // id -> {mediaPrice, weeks, unitPrice, qty, rateOverride}
+let mediaRowInputs = {};
 
 /* ================= Tabs ================= */
 document.querySelectorAll('nav button').forEach(btn=>{
@@ -269,7 +688,7 @@ document.querySelectorAll('nav button').forEach(btn=>{
 
 /* ================= Firebase connect ================= */
 function statusBox(el, msg, type){
-  el.innerHTML = '<div class="status '+type+'">'+msg+'</div>';
+  el.innerHTML = `<div class="status-box ${type}">${msg}</div>`;
 }
 
 function tryAutoConnect(){
@@ -291,38 +710,13 @@ document.getElementById('btnClearConfig').addEventListener('click', ()=>{
   statusBox(document.getElementById('connectStatus'), '已清除本機設定，重新整理頁面後生效。', 'info');
 });
 
-function extractFirebaseConfig(raw){
-  // 1) 先試嚴格 JSON
-  try{ return JSON.parse(raw); }catch(e){}
-  // 2) 從整段貼上的程式碼（例如含 const firebaseConfig = {...}）裡抓出物件字面量
-  const match = raw.match(/\{[\s\S]*\}/);
-  if(match){
-    try{
-      // 用 Function 安全地把 JS 物件字面量（含未加引號的 key）轉成物件，僅在使用者自己的瀏覽器執行
-      const obj = new Function('return (' + match[0] + ')')();
-      if(obj && typeof obj === 'object') return obj;
-    }catch(e){}
-  }
-  return null;
-}
-
-function withTimeout(promise, ms=15000){
-  return Promise.race([
-    promise,
-    new Promise((_,reject)=>setTimeout(()=>reject(new Error('逾時（15秒內沒有回應，通常代表 Firestore Database 還沒建立，或安全規則擋住了讀寫）')), ms))
-  ]);
-}
-function friendlyError(e){
-  const msg = (e && e.message) || String(e);
-  if(/permission/i.test(msg)) return '權限不足：請到 Firestore → 規則(Rules) 確認允許讀寫（測試階段可設 allow read, write: if true;）。原始訊息：'+msg;
-  return msg;
-}
-
 function connectFirebase(raw, silent){
   const statusEl = document.getElementById('connectStatus');
-  const cfg = extractFirebaseConfig(raw);
-  if(!cfg){
-    if(!silent) statusBox(statusEl, 'Config 格式錯誤，請貼上完整的 Firebase config（可以直接貼 Firebase Console 給的整段程式碼，或只貼 { ... } 物件）。', 'bad');
+  let cfg;
+  try{
+    cfg = JSON.parse(raw);
+  }catch(e){
+    if(!silent) statusBox(statusEl, 'Config 格式錯誤，請確認是合法的 JSON 物件。', 'error');
     return;
   }
   try{
@@ -330,33 +724,33 @@ function connectFirebase(raw, silent){
     firebaseApp = firebase.initializeApp(cfg, 'mediaToolkit_' + Date.now());
     db = firebaseApp.firestore();
     localStorage.setItem('mediaToolkitFirebaseConfig', raw);
-    statusBox(statusEl, '已連接 Firebase 專案：' + (cfg.projectId || '(未知專案)'), 'ok');
+    statusBox(statusEl, '✅ 已成功連接 Firebase 專案：' + (cfg.projectId || '(未知專案)'), 'ok');
     document.getElementById('btnSeed').disabled = false;
     loadAllData();
   }catch(e){
-    statusBox(statusEl, '連接失敗：' + e.message, 'bad');
+    statusBox(statusEl, '❌ 連接失敗：' + e.message, 'error');
   }
 }
 
 /* ================= Seed import ================= */
 document.getElementById('btnSeed').addEventListener('click', async ()=>{
   const el = document.getElementById('seedStatus');
-  el.textContent = '匯入中...';
+  el.textContent = '資料匯入中...';
   try{
-    const mcSnap = await withTimeout(db.collection('mediaComponents').limit(1).get());
+    const mcSnap = await db.collection('mediaComponents').limit(1).get();
     if(mcSnap.empty){
       const batch = db.batch();
       SEED_MEDIA_COMPONENTS.forEach(item=>{
         batch.set(db.collection('mediaComponents').doc(item.id), item);
       });
-      await withTimeout(batch.commit());
+      await batch.commit();
     }
-    const crSnap = await withTimeout(db.collection('clientMediaRates').limit(1).get());
+    const crSnap = await db.collection('clientMediaRates').limit(1).get();
     if(crSnap.empty){
-      const clientSnap = await withTimeout(db.collection('clients').where('name','==', SEED_CLIENT).limit(1).get());
+      const clientSnap = await db.collection('clients').where('name','==', SEED_CLIENT).limit(1).get();
       let clientId;
       if(clientSnap.empty){
-        const ref = await withTimeout(db.collection('clients').add({name: SEED_CLIENT}));
+        const ref = await db.collection('clients').add({name: SEED_CLIENT});
         clientId = ref.id;
       } else {
         clientId = clientSnap.docs[0].id;
@@ -370,38 +764,31 @@ document.getElementById('btnSeed').addEventListener('click', async ()=>{
           acRatePercent: r.acRatePercent
         });
       });
-      await withTimeout(batch2.commit());
+      await batch2.commit();
     }
-    const csSnap = await withTimeout(db.collection('creativeSpecs').limit(1).get());
+    const csSnap = await db.collection('creativeSpecs').limit(1).get();
     if(csSnap.empty){
       const batch3 = db.batch();
       SEED_CREATIVE_SPECS.forEach(item=>{
         batch3.set(db.collection('creativeSpecs').doc(item.id), item);
       });
-      await withTimeout(batch3.commit());
+      await batch3.commit();
     }
     el.textContent = '匯入完成！';
     loadAllData();
   }catch(e){
-    el.textContent = '匯入失敗：' + friendlyError(e);
+    el.textContent = '匯入失敗：' + e.message;
   }
 });
-</script>
-<script>
+
 /* ================= Data loading ================= */
 async function loadAllData(){
-  let clientsSnap, ratesSnap, mediaSnap, specSnap;
-  try{
-    [clientsSnap, ratesSnap, mediaSnap, specSnap] = await withTimeout(Promise.all([
-      db.collection('clients').get(),
-      db.collection('clientMediaRates').get(),
-      db.collection('mediaComponents').get(),
-      db.collection('creativeSpecs').get(),
-    ]));
-  }catch(e){
-    statusBox(document.getElementById('connectStatus'), '讀取資料失敗：' + friendlyError(e), 'bad');
-    return;
-  }
+  const [clientsSnap, ratesSnap, mediaSnap, specSnap] = await Promise.all([
+    db.collection('clients').get(),
+    db.collection('clientMediaRates').get(),
+    db.collection('mediaComponents').get(),
+    db.collection('creativeSpecs').get(),
+  ]);
   CLIENTS = clientsSnap.docs.map(d=>({id:d.id, ...d.data()}));
   CLIENT_RATES = ratesSnap.docs.map(d=>({id:d.id, ...d.data()}));
   MEDIA_COMPONENTS = mediaSnap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -417,43 +804,30 @@ async function loadAllData(){
 /* ================= Clients tab ================= */
 function renderClients(){
   const body = document.getElementById('clientTableBody');
-  if(CLIENTS.length===0){ body.innerHTML = '<tr><td colspan="2" class="empty">尚無客戶，請新增</td></tr>'; return; }
+  if(CLIENTS.length===0){ body.innerHTML = '<tr><td colspan="2" style="text-align:center; padding:20px; color:#6B7280;">尚無客戶資料</td></tr>'; return; }
   body.innerHTML = CLIENTS.map(c=>
-    '<tr><td>'+escapeHtml(c.name)+'</td><td><button class="btn ghost small" onclick="deleteClient(\''+c.id+'\')">刪除</button></td></tr>'
+    `<tr><td>${escapeHtml(c.name)}</td><td style="text-align:center;"><button class="btn ghost small danger" onclick="deleteClient('${c.id}')">刪除</button></td></tr>`
   ).join('');
 }
-document.getElementById('btnAddClient').addEventListener('click', async (e)=>{
-  const btn = e.currentTarget;
+document.getElementById('btnAddClient').addEventListener('click', async ()=>{
   const name = document.getElementById('newClientName').value.trim();
   if(!name) return;
-  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
-  btn.disabled = true; btn.textContent = '新增中...';
-  try{
-    await withTimeout(db.collection('clients').add({name}));
-    document.getElementById('newClientName').value = '';
-    await loadAllData();
-  }catch(e){
-    alert('新增客戶失敗：' + friendlyError(e));
-  }finally{
-    btn.disabled = false; btn.textContent = '新增客戶';
-  }
+  await db.collection('clients').add({name});
+  document.getElementById('newClientName').value = '';
+  loadAllData();
 });
 async function deleteClient(id){
-  if(!confirm('確定刪除此客戶？相關 AC% 對照不會自動刪除。')) return;
-  try{
-    await withTimeout(db.collection('clients').doc(id).delete());
-    loadAllData();
-  }catch(e){
-    alert('刪除失敗：' + friendlyError(e));
-  }
+  if(!confirm('確定刪除此客戶？')) return;
+  await db.collection('clients').doc(id).delete();
+  loadAllData();
 }
 
 /* ================= Rates tab ================= */
 function renderRateSelectors(){
   const clientSel = document.getElementById('rateClientSelect');
-  clientSel.innerHTML = CLIENTS.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
+  clientSel.innerHTML = CLIENTS.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   const mediaSel = document.getElementById('rateMediaSelect');
-  mediaSel.innerHTML = MEDIA_COMPONENTS.map(m=>'<option value="'+m.id+'">'+escapeHtml(m.label)+'</option>').join('');
+  mediaSel.innerHTML = MEDIA_COMPONENTS.map(m=>`<option value="${m.id}">${escapeHtml(m.label)}</option>`).join('');
   clientSel.onchange = renderRateTable;
   renderRateTable();
 }
@@ -461,55 +835,41 @@ function renderRateTable(){
   const clientId = document.getElementById('rateClientSelect').value;
   const body = document.getElementById('rateTableBody');
   const rows = CLIENT_RATES.filter(r=>r.clientId===clientId);
-  if(rows.length===0){ body.innerHTML = '<tr><td colspan="3" class="empty">此客戶尚無費率設定</td></tr>'; return; }
+  if(rows.length===0){ body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px; color:#6B7280;">此客戶尚無特殊費率設定</td></tr>'; return; }
   body.innerHTML = rows.map(r=>{
     const mc = MEDIA_COMPONENTS.find(m=>m.id===r.mediaComponentId);
     const label = mc ? mc.label : r.mediaComponentId;
-    return '<tr><td>'+escapeHtml(label)+'</td><td>'+r.acRatePercent+'%</td>'+
-      '<td><button class="btn ghost small" onclick="deleteRate(\''+r.id+'\')">刪除</button></td></tr>';
+    return `<tr><td>${escapeHtml(label)}</td><td><b>${r.acRatePercent}%</b></td>
+      <td style="text-align:center;"><button class="btn ghost small danger" onclick="deleteRate('${r.id}')">刪除</button></td></tr>`;
   }).join('');
 }
-document.getElementById('btnSaveRate').addEventListener('click', async (e)=>{
-  const btn = e.currentTarget;
+document.getElementById('btnSaveRate').addEventListener('click', async ()=>{
   const clientId = document.getElementById('rateClientSelect').value;
   const mediaId = document.getElementById('rateMediaSelect').value;
   const val = parseFloat(document.getElementById('rateValueInput').value);
   if(!clientId || !mediaId || isNaN(val)) return;
-  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
   const client = CLIENTS.find(c=>c.id===clientId);
   const docId = clientId + '_' + mediaId;
-  btn.disabled = true; btn.textContent = '儲存中...';
-  try{
-    await withTimeout(db.collection('clientMediaRates').doc(docId).set({
-      client: client ? client.name : '', clientId, mediaComponentId: mediaId, acRatePercent: val
-    }));
-    document.getElementById('rateValueInput').value = '';
-    await loadAllData();
-  }catch(e){
-    alert('儲存費率失敗：' + friendlyError(e));
-  }finally{
-    btn.disabled = false; btn.textContent = '儲存費率';
-  }
+  await db.collection('clientMediaRates').doc(docId).set({
+    client: client ? client.name : '', clientId, mediaComponentId: mediaId, acRatePercent: val
+  });
+  document.getElementById('rateValueInput').value = '';
+  loadAllData();
 });
 async function deleteRate(id){
-  try{
-    await withTimeout(db.collection('clientMediaRates').doc(id).delete());
-    loadAllData();
-  }catch(e){
-    alert('刪除失敗：' + friendlyError(e));
-  }
+  await db.collection('clientMediaRates').doc(id).delete();
+  loadAllData();
 }
 
 function escapeHtml(s){
   if(s===undefined || s===null) return '';
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-</script>
-<script>
+
 /* ================= Media Cue tab ================= */
 function renderMediaCueClientSelect(){
   const sel = document.getElementById('mcClient');
-  sel.innerHTML = CLIENTS.map(c=>'<option value="'+c.id+'">'+escapeHtml(c.name)+'</option>').join('');
+  sel.innerHTML = CLIENTS.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
   sel.onchange = ()=>{ renderMediaChecklist(); renderSelectedMediaRows(); };
 }
 
@@ -520,32 +880,46 @@ function getRateFor(clientId, mediaComponentId){
 
 function renderMediaChecklist(){
   const wrap = document.getElementById('mediaChecklist');
-  if(MEDIA_COMPONENTS.length===0){ wrap.innerHTML = '<div class="empty">尚未有媒體元件，請到①匯入起始資料，或到 Firestore 手動新增 mediaComponents。</div>'; return; }
+  if(MEDIA_COMPONENTS.length===0){ wrap.innerHTML = '<div class="empty-state">尚未有媒體元件，請至設定頁匯入資料。</div>'; return; }
   const clientId = document.getElementById('mcClient').value;
   const groups = {};
   MEDIA_COMPONENTS.forEach(m=>{
-    const g = m.objective || '未分類';
+    const g = m.objective || '未分類媒體';
     (groups[g] = groups[g] || []).push(m);
   });
+  
   let html = '';
   Object.keys(groups).forEach(g=>{
-    html += '<div class="group-title">'+escapeHtml(g)+'</div>';
+    html += `<div class="checklist-group">`;
+    html += `<div class="group-title">${escapeHtml(g)}</div>`;
+    html += `<div class="checklist-grid">`;
+    
     groups[g].forEach(m=>{
       const rate = getRateFor(clientId, m.id);
       const checked = selectedMediaIds.has(m.id) ? 'checked' : '';
-      html += '<label class="checklist-item">'+
-        '<input type="checkbox" data-id="'+m.id+'" '+checked+' onchange="toggleMedia(this)">'+
-        '<span>'+
-          '<div><b>'+escapeHtml(m.label)+'</b> '+
-            (m.buyingModel? '<span class="tag">'+escapeHtml(m.buyingModel)+'</span>':'')+
-            (rate!==null? '<span class="pill-rate">AC '+rate+'%</span>' : '<span class="pill-rate" style="background:#eee;color:#888;">此客戶尚無費率</span>')+
-          '</div>'+
-          '<div class="meta">'+escapeHtml(m.adFormat||'')+(m.materialNote? ' ・ 素材：'+escapeHtml(m.materialNote):'')+
-            (m.kpiFieldsNeeded && m.kpiFieldsNeeded.length? ' ・ 需要欄位：'+m.kpiFieldsNeeded.join('、'):'')+
-          '</div>'+
-        '</span>'+
-      '</label>';
+      
+      let rateBadge = rate !== null ? `<span class="pill-rate">AC ${rate}%</span>` : `<span class="tag">無設定AC</span>`;
+      let modelBadge = m.buyingModel ? `<span class="tag">${escapeHtml(m.buyingModel)}</span>` : '';
+      let formatInfo = escapeHtml(m.adFormat||'');
+      let noteInfo = m.materialNote ? ` · 素材: ${escapeHtml(m.materialNote)}` : '';
+      
+      html += `
+        <label class="checklist-item">
+          <input type="checkbox" data-id="${m.id}" ${checked} onchange="toggleMedia(this)">
+          <div class="item-content">
+            <div class="item-title">
+              ${escapeHtml(m.label)}
+              ${modelBadge}
+              ${rateBadge}
+            </div>
+            <div class="item-meta">
+              ${formatInfo}${noteInfo}
+            </div>
+          </div>
+        </label>
+      `;
     });
+    html += `</div></div>`;
   });
   wrap.innerHTML = html;
 }
@@ -567,8 +941,10 @@ function toggleMedia(cb){
 function renderSelectedMediaRows(){
   const wrap = document.getElementById('selectedMediaRows');
   const clientId = document.getElementById('mcClient').value;
-  if(selectedMediaIds.size===0){ wrap.innerHTML='<div class="empty">尚未勾選任何媒體元件</div>'; updateGrandTotal(); return; }
-  let html = '<table><thead><tr><th>媒體</th><th>單價</th><th>數量</th><th>Media Price</th><th>AC%</th><th>AC 金額</th><th>Total Budget</th></tr></thead><tbody>';
+  if(selectedMediaIds.size===0){ wrap.innerHTML='<div class="empty-state">請由上方勾選需要的媒體版位</div>'; updateGrandTotal(); return; }
+  
+  let html = '<div class="table-wrapper"><table><thead><tr><th>媒體</th><th>單價</th><th>數量</th><th>Media Price</th><th>AC(%)</th><th>AC 金額</th><th>Total Budget</th><th></th></tr></thead><tbody>';
+  
   Array.from(selectedMediaIds).forEach(id=>{
     const m = MEDIA_COMPONENTS.find(x=>x.id===id);
     if(!m) return;
@@ -577,24 +953,30 @@ function renderSelectedMediaRows(){
     const mediaPrice = parseFloat(inp.mediaPrice) || 0;
     const acAmount = rate!=null ? Math.round(mediaPrice * rate / 100) : 0;
     const total = mediaPrice + acAmount;
-    html += '<tr>'+
-      '<td>'+escapeHtml(m.label)+'</td>'+
-      '<td><input type="number" style="width:90px" value="'+inp.unitPrice+'" onchange="updateRowInput(\''+id+'\',\'unitPrice\',this.value)"></td>'+
-      '<td><input type="number" style="width:70px" value="'+inp.qty+'" onchange="updateRowInput(\''+id+'\',\'qty\',this.value)"></td>'+
-      '<td>'+
-        '<input type="number" style="width:110px" value="'+inp.mediaPrice+'" onchange="updateRowInput(\''+id+'\',\'mediaPrice\',this.value)">'+
-        ' <button class="btn ghost small" onclick="calcMediaPrice(\''+id+'\')">單價×數量</button>'+
-      '</td>'+
-      '<td><input type="number" style="width:70px" placeholder="'+(rate!=null?rate:'—')+'" value="'+inp.rateOverride+'" onchange="updateRowInput(\''+id+'\',\'rateOverride\',this.value)"></td>'+
-      '<td>'+acAmount.toLocaleString()+'</td>'+
-      '<td><b>'+total.toLocaleString()+'</b></td>'+
-      '<td><button class="btn ghost small" onclick="removeMedia(\''+id+'\')">移除</button></td>'+
-    '</tr>';
+    
+    html += `
+      <tr>
+        <td style="font-weight:500;">${escapeHtml(m.label)}</td>
+        <td><input type="number" style="width:80px" value="${inp.unitPrice}" onchange="updateRowInput('${id}','unitPrice',this.value)"></td>
+        <td><input type="number" style="width:60px" value="${inp.qty}" onchange="updateRowInput('${id}','qty',this.value)"></td>
+        <td>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <input type="number" style="width:100px" value="${inp.mediaPrice}" onchange="updateRowInput('${id}','mediaPrice',this.value)">
+            <button class="btn secondary small" style="padding:4px 8px;" onclick="calcMediaPrice('${id}')" title="單價×數量計算">=</button>
+          </div>
+        </td>
+        <td><input type="number" style="width:60px" placeholder="${rate!=null?rate:'-'}" value="${inp.rateOverride}" onchange="updateRowInput('${id}','rateOverride',this.value)"></td>
+        <td style="color:var(--text-muted);">${acAmount.toLocaleString()}</td>
+        <td style="font-weight:600; color:var(--primary);">${total.toLocaleString()}</td>
+        <td><button class="btn ghost small danger" onclick="removeMedia('${id}')">移除</button></td>
+      </tr>
+    `;
   });
-  html += '</tbody></table>';
+  html += '</tbody></table></div>';
   wrap.innerHTML = html;
   updateGrandTotal();
 }
+
 function updateRowInput(id, field, val){
   mediaRowInputs[id][field] = val;
   renderSelectedMediaRows();
@@ -624,8 +1006,7 @@ function updateGrandTotal(){
   });
   document.getElementById('mcGrandTotal').textContent = 'NT$ ' + sum.toLocaleString();
 }
-</script>
-<script>
+
 /* ================= Media Cue export ================= */
 document.getElementById('btnExportMediaCue').addEventListener('click', ()=>{
   if(selectedMediaIds.size===0){ alert('請先勾選至少一個媒體元件'); return; }
@@ -679,28 +1060,45 @@ document.getElementById('btnExportMediaCue').addEventListener('click', ()=>{
 let specSelected = new Set();
 function renderSpecChecklist(){
   const wrap = document.getElementById('specChecklist');
-  if(CREATIVE_SPECS.length===0){ wrap.innerHTML = '<div class="empty">尚未有規範資料，請到①匯入起始資料。</div>'; return; }
+  if(CREATIVE_SPECS.length===0){ wrap.innerHTML = '<div class="empty-state">尚未有規範資料，請先匯入。</div>'; return; }
   const groups = {};
   CREATIVE_SPECS.forEach(s=>{ (groups[s.platform]=groups[s.platform]||[]).push(s); });
+  
   let html='';
   Object.keys(groups).forEach(p=>{
-    html += '<div class="group-title">'+escapeHtml(p)+'</div>';
+    html += `<div class="checklist-group">`;
+    html += `<div class="group-title">${escapeHtml(p)}</div>`;
+    html += `<div class="checklist-grid">`;
+    
     groups[p].forEach(s=>{
       const checked = specSelected.has(s.id)?'checked':'';
-      html += '<label class="checklist-item">'+
-        '<input type="checkbox" data-id="'+s.id+'" '+checked+' onchange="toggleSpec(this)">'+
-        '<span><div><b>'+escapeHtml(s.adFormat)+'</b> — '+escapeHtml(s.field)+
-          (s.lastVerified? ' <span class="tag">確認於 '+s.lastVerified+'</span>':' <span class="pill-rate">尚未標註確認日期</span>')+
-        '</div><div class="meta">'+escapeHtml(s.content)+'</div></span>'+
-      '</label>';
+      let verifyBadge = s.lastVerified ? `<span class="tag">確認於 ${s.lastVerified}</span>` : '';
+      
+      html += `
+        <label class="checklist-item">
+          <input type="checkbox" data-id="${s.id}" ${checked} onchange="toggleSpec(this)">
+          <div class="item-content">
+            <div class="item-title">
+              ${escapeHtml(s.adFormat)} - ${escapeHtml(s.field)}
+              ${verifyBadge}
+            </div>
+            <div class="item-meta" style="overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+              ${escapeHtml(s.content)}
+            </div>
+          </div>
+        </label>
+      `;
     });
+    html += `</div></div>`;
   });
   wrap.innerHTML = html;
 }
+
 function toggleSpec(cb){
   const id = cb.dataset.id;
   if(cb.checked) specSelected.add(id); else specSelected.delete(id);
 }
+
 document.getElementById('btnExportSpecs').addEventListener('click', ()=>{
   if(specSelected.size===0){ alert('請先勾選至少一項規範'); return; }
   const campaignName = document.getElementById('specCampaignName').value;
@@ -720,19 +1118,26 @@ document.getElementById('btnExportSpecs').addEventListener('click', ()=>{
 /* ================= Spec library management ================= */
 function renderSpecLibTable(){
   const wrap = document.getElementById('specLibTable');
-  if(CREATIVE_SPECS.length===0){ wrap.innerHTML='<div class="empty">尚無資料</div>'; return; }
-  let html = '<table><thead><tr><th>平台</th><th>形式/版位</th><th>欄位</th><th>內容</th><th>確認日期</th><th></th></tr></thead><tbody>';
+  if(CREATIVE_SPECS.length===0){ wrap.innerHTML='<div class="empty-state">尚無資料</div>'; return; }
+  
+  let html = '<table><thead><tr><th>平台</th><th>形式/版位</th><th>欄位</th><th>內容</th><th>確認日期</th><th style="text-align:center;">操作</th></tr></thead><tbody>';
   CREATIVE_SPECS.forEach(s=>{
-    html += '<tr><td>'+escapeHtml(s.platform)+'</td><td>'+escapeHtml(s.adFormat)+'</td><td>'+escapeHtml(s.field)+'</td>'+
-      '<td style="max-width:320px;white-space:pre-wrap;">'+escapeHtml(s.content)+'</td>'+
-      '<td>'+(s.lastVerified||'—')+'</td>'+
-      '<td><button class="btn ghost small" onclick="deleteSpec(\''+s.id+'\')">刪除</button></td></tr>';
+    html += `
+      <tr>
+        <td style="font-weight:500;">${escapeHtml(s.platform)}</td>
+        <td>${escapeHtml(s.adFormat)}</td>
+        <td><span class="tag">${escapeHtml(s.field)}</span></td>
+        <td style="max-width:300px; font-size:12px; color:var(--text-muted);">${escapeHtml(s.content)}</td>
+        <td style="font-size:12px;">${s.lastVerified||'-'}</td>
+        <td style="text-align:center;"><button class="btn ghost small danger" onclick="deleteSpec('${s.id}')">刪除</button></td>
+      </tr>
+    `;
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
 }
-document.getElementById('btnSaveSpec').addEventListener('click', async (e)=>{
-  const btn = e.currentTarget;
+
+document.getElementById('btnSaveSpec').addEventListener('click', async ()=>{
   const platform = document.getElementById('specPlatform').value.trim();
   const adFormat = document.getElementById('specFormat').value.trim();
   const field = document.getElementById('specField').value.trim();
@@ -740,28 +1145,20 @@ document.getElementById('btnSaveSpec').addEventListener('click', async (e)=>{
   const notes = document.getElementById('specNotes').value.trim();
   const sourceUrl = document.getElementById('specSourceUrl').value.trim();
   const lastVerified = document.getElementById('specLastVerified').value;
-  if(!platform || !adFormat || !field || !content){ alert('平台、形式、欄位、內容為必填'); return; }
-  if(!db){ alert('尚未連接 Firebase，請先完成①的連線設定。'); return; }
+  
+  if(!platform || !adFormat || !field || !content){ alert('請填寫必填欄位 (平台、形式、欄位、內容)'); return; }
+  
   const id = 'cs_' + Date.now();
-  btn.disabled = true; btn.textContent = '儲存中...';
-  try{
-    await withTimeout(db.collection('creativeSpecs').doc(id).set({platform, adFormat, field, content, notes, sourceUrl, lastVerified}));
-    ['specPlatform','specFormat','specField','specContent','specNotes','specSourceUrl','specLastVerified'].forEach(i=>document.getElementById(i).value='');
-    await loadAllData();
-  }catch(e){
-    alert('儲存規範失敗：' + friendlyError(e));
-  }finally{
-    btn.disabled = false; btn.textContent = '儲存規範';
-  }
+  await db.collection('creativeSpecs').doc(id).set({platform, adFormat, field, content, notes, sourceUrl, lastVerified});
+  
+  ['specPlatform','specFormat','specField','specContent','specNotes','specSourceUrl','specLastVerified'].forEach(i=>document.getElementById(i).value='');
+  loadAllData();
 });
+
 async function deleteSpec(id){
   if(!confirm('確定刪除此規範條目？')) return;
-  try{
-    await withTimeout(db.collection('creativeSpecs').doc(id).delete());
-    loadAllData();
-  }catch(e){
-    alert('刪除失敗：' + friendlyError(e));
-  }
+  await db.collection('creativeSpecs').doc(id).delete();
+  loadAllData();
 }
 
 /* ================= Init ================= */

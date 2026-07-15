@@ -4,37 +4,301 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>合利他命 KOL 詢價與合作成效智庫</title>
-    <!-- 引入 Tailwind CSS 確保奢華質感 -->
+    <!-- 僅引入最穩定的 Tailwind CSS 確保排版，無任何 JS 衝突風險 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Lucide Icons 用於直覺圖示 -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- 引入 React & Babel 確保 GitHub Pages 免編譯直接運行 -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;950&display=swap');
-        body {
-            font-family: 'Noto Sans TC', sans-serif;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex flex-col">
+<body class="bg-slate-50 min-h-screen flex flex-col text-slate-800">
 
-    <div id="root"></div>
+    <!-- ==================== 頂部導覽列 (紅金配色) ==================== -->
+    <header class="bg-gradient-to-r from-red-700 via-red-600 to-amber-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white px-3 py-1 rounded-lg text-red-600 font-black text-xl shadow-inner">合利他命</div>
+                <div>
+                    <h1 class="text-lg font-bold">KOL 詢價與合作成效智庫</h1>
+                    <p class="text-[10px] text-red-100">內部專用 • 數據安全加密與防踩雷系統</p>
+                </div>
+            </div>
+            <!-- 一鍵登載按鈕 (直接觸發 Modal) -->
+            <button onclick="openCollabModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-black px-4 py-2.5 rounded-lg shadow-md transition-all">
+                📝 登載合作成效 (Post-buy)
+            </button>
+        </div>
+    </header>
 
-    <script type="text/babel">
-        const { useState, useMemo, useEffect } = React;
+    <!-- ==================== 產品快速篩選區 ==================== -->
+    <section class="bg-white border-b border-slate-200 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex flex-wrap gap-2 items-center">
+            <span class="text-xs font-bold text-slate-400">產品線快速篩選：</span>
+            <button onclick="filterProduct('ALL')" id="tab-ALL" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-red-600 text-white shadow-sm">全部人選</button>
+            <button onclick="filterProduct('EXP')" id="tab-EXP" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">EXP (黃金強效錠)</button>
+            <button onclick="filterProduct('EXG')" id="tab-EXG" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">EXG (強效錠)</button>
+            <button onclick="filterProduct('A25')" id="tab-A25" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">A25 (日常活力)</button>
+            <button onclick="filterProduct('HICEE')" id="tab-HICEE" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">HICEE (維他命C)</button>
+            <button onclick="filterProduct('Controloc')" id="tab-Controloc" class="product-tab px-3 py-1.5 rounded-lg text-xs font-black bg-slate-100 text-slate-600">Controloc (胃藥)</button>
+        </div>
+    </section>
 
-        // ==================== 初始化精準數據 ====================
-        const INITIAL_KOLS = [
-          {
-            id: "kol_001",
-            name: "Dinner Lin",
-            type: "美食生活 / 實測好物",
-            links: { fb: "", ig: "https://instagram.com/dinner_lin", yt: "https://youtube.com/shorts/cgqutkKB2oY", tiktok: "" },
-            followers: { fb: 0, ig: 180000, yt: 450000, tiktok: 0 },
-            videoViews: 1680000,
+    <!-- ==================== 主工作區 (極簡原生頁籤) ==================== -->
+    <div class="bg-slate-100 border-b border-slate-200 py-2">
+        <div class="max-w-7xl mx-auto px-4 flex gap-4 text-xs font-bold">
+            <button onclick="switchTab('database')" id="nav-database" class="nav-btn text-red-600 border-b-2 border-red-600 pb-1">KOL 詢價與比價首頁</button>
+            <button onclick="switchTab('showcase')" id="nav-showcase" class="nav-btn text-slate-500 pb-1">📱 合作成效看板</button>
+            <button onclick="switchTab('upload')" id="nav-upload" class="nav-btn text-slate-500 pb-1">批次匯入報價</button>
+        </div>
+    </div>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-8">
+        
+        <!-- ==================== 頁籤 1: KOL 詢價與比價首頁 ==================== -->
+        <div id="panel-database" class="tab-panel space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Dinner Lin 卡片 -->
+                <div class="kol-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between" data-products="HICEE,A25">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-start">
+                        <div>
+                            <span class="bg-red-50 text-red-700 text-[10px] px-2.5 py-1 rounded-full font-bold border border-red-100">美食生活 / 實測好物</span>
+                            <h3 class="text-lg font-black mt-2 text-slate-900">Dinner Lin</h3>
+                        </div>
+                        <span class="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500 text-white">🟢 已合作過</span>
+                    </div>
+
+                    <div class="p-6 space-y-4 flex-grow">
+                        <!-- 獨立期數報價，避免時效錯置 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                          <div class="flex justify-between items-center text-xs text-slate-400 pb-2 border-b border-slate-200">
+                            <span class="font-bold">最新詢價方案</span>
+                            <span class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">HICEE 線</span>
+                          </div>
+                          <div class="space-y-1.5 text-xs text-slate-700">
+                              <p>Campaign: <strong class="text-slate-900">2026年Q2 HICEE好物推薦案</strong></p>
+                              <p>報價廠商: <strong class="text-slate-900">快點數位行銷 (2026-04-10)</strong></p>
+                              <div class="grid grid-cols-2 gap-2 mt-2">
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                  <span class="text-[10px] text-slate-400 block font-bold">直式短影音</span>
+                                  <strong class="text-slate-900 font-mono">$45,000</strong>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                  <span class="text-[10px] text-slate-400 block font-bold">多圖貼文</span>
+                                  <strong class="text-slate-900 font-mono">$25,000</strong>
+                                </div>
+                              </div>
+                          </div>
+                        </div>
+
+                        <!-- 避坑提醒 -->
+                        <div class="bg-red-50 text-red-950 p-3.5 rounded-xl text-xs border border-red-100 leading-relaxed">
+                            <strong class="text-red-700 font-extrabold">⚠️ 避坑提醒：</strong>
+                            <span>Dinner Lin 腳本審查配合度高，但置入切角要求生活化、不接受生硬的大字報，文案需保留創作者語氣。</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <button onclick="openHistoryModal('Dinner Lin')" class="text-red-700 font-black hover:underline">查看比價歷史與推薦原因 →</button>
+                        <button onclick="openCollabModal('Dinner Lin')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold">登載成效</button>
+                    </div>
+                </div>
+
+                <!-- 陳醫師卡片 -->
+                <div class="kol-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between" data-products="EXP">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-start">
+                        <div>
+                            <span class="bg-red-50 text-red-700 text-[10px] px-2.5 py-1 rounded-full font-bold border border-red-100">專業醫療 / 養生保健</span>
+                            <h3 class="text-lg font-black mt-2 text-slate-900">陳醫師的健康生活</h3>
+                        </div>
+                        <span class="text-[10px] font-black px-3 py-1 rounded-full bg-slate-200 text-slate-500">⚪ 未合作過</span>
+                    </div>
+
+                    <div class="p-6 space-y-4 flex-grow">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                          <div class="flex justify-between items-center text-xs text-slate-400 pb-2 border-b border-slate-200">
+                            <span class="font-bold">最新詢價方案</span>
+                            <span class="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px]">EXP 線</span>
+                          </div>
+                          <div class="space-y-1.5 text-xs text-slate-700">
+                              <p>Campaign: <strong class="text-slate-900">2026年Q1 EXP 醫學推廣案</strong></p>
+                              <p>報價廠商: <strong class="text-slate-900">快點數位行銷 (2026-01-20)</strong></p>
+                              <div class="grid grid-cols-2 gap-2 mt-2">
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                  <span class="text-[10px] text-slate-400 block font-bold">單圖貼文</span>
+                                  <strong class="text-slate-900 font-mono">$25,000</strong>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                  <span class="text-[10px] text-slate-400 block font-bold">YT長影音</span>
+                                  <strong class="text-slate-900 font-mono">$90,000</strong>
+                                </div>
+                              </div>
+                          </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <button onclick="openHistoryModal('陳醫師的健康生活')" class="text-red-700 font-black hover:underline">查看比價歷史與推薦原因 →</button>
+                        <button onclick="openCollabModal('陳醫師的健康生活')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold">登載成效</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ==================== 頁籤 2: 📱 合作成效看板 ==================== -->
+        <div id="panel-showcase" class="tab-panel hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                    <div class="p-4 bg-slate-900 text-white flex justify-between items-center text-xs">
+                        <span class="font-extrabold">2026年Q2 HICEE好物推薦案</span>
+                        <span class="bg-red-600 text-white font-bold px-2.5 py-0.5 rounded">HICEE 系列</span>
+                    </div>
+
+                    <div class="p-6 space-y-5">
+                        <!-- 純數字數據格式 -->
+                        <div class="grid grid-cols-5 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-[10px] font-bold">
+                            <div>
+                                <span class="text-slate-400 block mb-0.5">觸及數</span>
+                                <span class="text-slate-800 font-extrabold text-xs">1,850,000</span>
+                            </div>
+                            <div class="border-l border-slate-200">
+                                <span class="text-slate-400 block mb-0.5">影片觀看</span>
+                                <span class="text-red-600 font-extrabold text-xs">1,687,446</span>
+                            </div>
+                            <div class="border-l border-slate-200">
+                                <span class="text-slate-400 block mb-0.5">按讚數</span>
+                                <span class="text-slate-800 font-extrabold text-xs">27,480</span>
+                            </div>
+                            <div class="border-l border-slate-200">
+                                <span class="text-slate-400 block mb-0.5">分享數</span>
+                                <span class="text-slate-800 font-extrabold text-xs">8,400</span>
+                            </div>
+                            <div class="border-l border-slate-200">
+                                <span class="text-slate-400 block mb-0.5">留言數</span>
+                                <span class="text-slate-800 font-extrabold text-xs">920</span>
+                            </div>
+                        </div>
+
+                        <!-- 避坑指南 -->
+                        <div class="bg-red-50 text-red-950 p-4 rounded-xl text-xs border border-red-100">
+                            <strong class="text-red-700 font-extrabold">⚠️ 避坑指南：</strong>Dinner Lin 腳本審查配合度高，但置入切角要求生活化、不接受生硬的大字報，文案需保留創作者語氣。
+                        </div>
+
+                        <!-- YouTube Shorts 實體播放器模擬 -->
+                        <div class="bg-black rounded-2xl overflow-hidden relative max-w-[280px] mx-auto aspect-[9/16] shadow-xl border border-slate-800 flex flex-col justify-between p-4 text-white">
+                            <div class="z-10 bg-red-600 text-white font-extrabold text-[8px] px-2 py-0.5 rounded tracking-widest self-start shadow">
+                                LIVE SHORTS
+                              </div>
+                              <div class="absolute inset-0 flex items-center justify-center bg-slate-800 text-center p-5">
+                                <div class="space-y-1.5">
+                                  <p class="font-extrabold text-amber-400 text-xs tracking-wider">#好市多爆紅美食實測！</p>
+                                  <p class="text-[10px] text-slate-400 font-medium">合利他命 B群 活力置入推薦</p>
+                                </div>
+                              </div>
+                              <div class="z-10 bg-gradient-to-t from-black/90 to-transparent p-3 mt-auto text-[10px] space-y-1">
+                                <p class="font-black text-white">@Dinner Lin</p>
+                                <p class="text-slate-300 leading-normal line-clamp-2">這燉飯很好吃耶！西班牙做了1.4公斤賣439。開心果醬成分簡單... (置入 HICEE 元氣補給)</p>
+                              </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 px-5 py-4 border-t flex justify-between items-center text-xs">
+                        <a href="https://youtube.com/shorts/cgqutkKB2oY" target="_blank" class="text-red-700 font-black hover:underline">開啟 YouTube Shorts 原片 ↗</a>
+                        <button onclick="openCollabModal('Dinner Lin')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold">修改數據</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 頁籤 3: 批次匯入報價 ==================== -->
+        <div id="panel-upload" class="tab-panel hidden max-w-2xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 space-y-5 text-xs">
+            <h3 class="text-sm font-black text-slate-900 border-b pb-3">📥 批次匯入廠商詢價報價</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">Campaign Name <span class="text-red-600">*</span></label>
+                    <input id="up-campaign" type="text" class="w-full border rounded-lg p-2.5" placeholder="2026年Q2 HICEE好物推薦案" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">目標置入產品 <span className="text-red-600">*</span></label>
+                    <select id="up-prod" class="w-full border rounded-lg p-2.5 bg-white">
+                        <option value="EXP">EXP (黃金強效錠)</option>
+                        <option value="EXG">EXG (強效錠)</option>
+                        <option value="A25">A25 (日常活力)</option>
+                        <option value="HICEE">HICEE (維他命C)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">報價廠商</label>
+                    <input id="up-vendor" type="text" class="w-full border rounded-lg p-2.5" placeholder="快點數位行銷" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1.5">詢價日期</label>
+                    <input id="up-date" type="date" class="w-full border rounded-lg p-2.5" value="2026-07-16" />
+                </div>
+            </div>
+            <div>
+                <button type="button" onclick="fillDemo()" class="text-red-600 font-black underline mb-2 block">💡 點此自動帶入 Dinner Lin 詢價範例數據</button>
+                <textarea id="up-paste" rows="3" class="w-full border rounded-lg p-3 font-mono" placeholder="貼上 Excel 對應欄位文字..."></textarea>
+            </div>
+            <button onclick="alert('成功模擬解析並存檔！')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold p-3 rounded-xl w-full text-center">確認解析並存檔至資料庫</button>
+        </div>
+
+    </main>
+
+    <!-- ==================== 彈出視窗 1: 歷史比價歷史與定位 ==================== -->
+    <div id="modal-history" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="hist-title" class="text-lg font-black text-slate-900">比價歷史</h3>
+                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-950 font-bold text-lg">✕</button>
+            </div>
+            <div id="hist-reason" class="bg-red-50 p-4 rounded-xl text-xs text-red-950 border border-red-100">
+                <!-- 推薦原因置於此 -->
+            </div>
+            <div class="space-y-3">
+                <h4 class="text-xs font-bold text-slate-400">💰 跨期詢價歷史（僅顯示該次實際詢價規格）</h4>
+                <div id="hist-list" class="space-y-3">
+                    <!-- 歷史卡片流 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 彈出視窗 2: 全域一鍵成效登載 (Post-buy) ==================== -->
+    <div id="modal-collab" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 text-xs shadow-2xl">
+            <h3 class="text-md font-black text-slate-900 border-b pb-3">📝 Post-buy 合作成效數據與避雷登載</h3>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">選擇合作 KOL</label>
+                <select id="collab-kol" class="w-full border rounded-lg p-2 bg-white">
+                    <option value="Dinner Lin">Dinner Lin</option>
+                    <option value="陳醫師的健康生活">陳醫師的健康生活</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-bold text-slate-700 mb-1">採用詢價來源</label>
+                <select class="w-full border rounded-lg p-2 bg-white">
+                    <option>2026年Q2 HICEE好物推薦案 (HICEE)</option>
+                    <option>2026年Q3 A25通路推廣案 (A25)</option>
+                </select>
+            </div>
+            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <span class="block font-bold text-slate-700">結案成效數據填寫 (純數字)</span>
+                <div>
+                    <label class="block text-slate-400 text-[10px] mb-1">貼文網址 (以利系統進行模擬預覽)</label>
+                    <input type="url" class="w-full border rounded p-2" value="https://youtube.com/shorts/cgqutkKB2oY" />
+                </div>
+                <div class="grid grid-cols-5 gap-1.5">
+                    <div>
+                        <label class="block text-slate-400 text-[10px] text-center">觸及數</label>
+                        <input type="number" class="w-full border p-1 rounded text-center" value="1850000" />
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-[10px] text-center">觀看數</label>
+                        <input type="number            videoViews: 1680000,
             genderRatio: { male: 40, female: 60 },
             ageRatio: { "18-24": 30, "25-34": 50, "35-44": 15, "45+": 5 },
             recommendedPlatform: "YouTube Shorts",

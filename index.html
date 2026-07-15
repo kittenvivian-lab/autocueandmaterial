@@ -4,30 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>合利他命 KOL 詢價與合作成效智庫</title>
-    <!-- Tailwind CSS 用於精美排版 -->
+    <!-- 引入 Tailwind CSS 確保奢華質感 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons 用於質感圖示 -->
+    <!-- 引入 Lucide Icons 用於直覺圖示 -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- React & Babel 用於瀏覽器即時編譯（免打包） -->
+    <!-- 引入 React & Babel 確保 GitHub Pages 免編譯直接運行 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;950&display=swap');
         body {
             font-family: 'Noto Sans TC', sans-serif;
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen flex flex-col">
 
     <div id="root"></div>
 
-    <!-- 核心 React & 業務邏輯，瀏覽器可直接解析 -->
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
-        // ==================== 初始 Mock 資料 ====================
+        // ==================== 初始化精準數據 ====================
         const INITIAL_KOLS = [
           {
             id: "kol_001",
@@ -35,6 +34,352 @@
             type: "美食生活 / 實測好物",
             links: { fb: "", ig: "https://instagram.com/dinner_lin", yt: "https://youtube.com/shorts/cgqutkKB2oY", tiktok: "" },
             followers: { fb: 0, ig: 180000, yt: 450000, tiktok: 0 },
+            videoViews: 1680000,
+            genderRatio: { male: 40, female: 60 },
+            ageRatio: { "18-24": 30, "25-34": 50, "35-44": 15, "45+": 5 },
+            recommendedPlatform: "YouTube Shorts",
+            recommendReason: "節奏極快、受眾黏著度高。適合用好市多爆紅好物實測的邏輯，置入合利他命 HICEE 或 A25 每日辦公必備好物。"
+          },
+          {
+            id: "kol_002",
+            name: "陳醫師的健康生活",
+            type: "專業醫療 / 養生保健",
+            links: { fb: "https://facebook.com/dr_chen_health", ig: "https://instagram.com/dr_chen_ig", yt: "https://youtube.com/c/dr_chen_health", tiktok: "" },
+            followers: { fb: 150000, ig: 80000, yt: 120000, tiktok: 0 },
+            videoViews: 45000,
+            genderRatio: { male: 45, female: 55 },
+            ageRatio: { "18-24": 10, "25-34": 40, "35-44": 35, "45+": 15 },
+            recommendedPlatform: "YouTube",
+            recommendReason: "身分具備專業醫師執照，講解合利他命 EXP 的維生素 B 群與神經修復科學原理極具說服力。"
+          }
+        ];
+
+        const INITIAL_QUOTES = [
+          {
+            id: "quote_001",
+            kolId: "kol_001",
+            campaignName: "2026年Q2 HICEE好物推薦案",
+            product: "HICEE",
+            vendor: "快點數位行銷",
+            inquiryDate: "2026-04-10",
+            prices: { verticalVideo: 45000, multiImage: 25000 }, // 只有這兩項有報價
+            authDuration: "3個月",
+            authCost: 10000
+          },
+          {
+            id: "quote_002",
+            kolId: "kol_001",
+            campaignName: "2026年Q3 A25通路推廣案",
+            product: "A25",
+            vendor: "星潮娛樂媒體",
+            inquiryDate: "2026-06-01",
+            prices: { singleImage: 22000, ytHorizontalVideo: 85000 }, // 其他項為空
+            authDuration: "3個月",
+            authCost: 12000
+          }
+        ];
+
+        const INITIAL_COLLABORATIONS = [
+          {
+            id: "collab_001",
+            kolId: "kol_001",
+            quoteId: "quote_001",
+            campaignName: "2026年Q2 HICEE好物推薦案",
+            product: "HICEE",
+            specs: ["verticalVideo"],
+            postLink: "https://youtube.com/shorts/cgqutkKB2oY",
+            reach: 1850000,
+            views: 1687446,
+            likes: 27480,
+            shares: 8400,
+            comments: 920,
+            warningNotes: "Dinner Lin 腳本審查配合度高，但置入切角要求生活化、不接受生硬的大字報，文案需保留創作者語氣。",
+            ratingCooperation: 5,
+            ratingSatisfaction: 5
+          }
+        ];
+
+        function App() {
+          const [kols, setKols] = useState(INITIAL_KOLS);
+          const [quotes, setQuotes] = useState(INITIAL_QUOTES);
+          const [collaborations, setCollaborations] = useState(INITIAL_COLLABORATIONS);
+          
+          const [activeTab, setActiveTab] = useState('database'); 
+          const [searchTerm, setSearchTerm] = useState('');
+          const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
+          const [selectedProductTab, setSelectedProductTab] = useState('ALL'); // 產品線快速篩選 Tab
+          const [selectedKOL, setSelectedKOL] = useState(null); 
+          const [showCollabModal, setShowCollabModal] = useState(false);
+
+          // 批次上傳與手動填寫表單 State
+          const [uploadVendor, setUploadVendor] = useState('');
+          const [uploadDate, setUploadDate] = useState(new Date().toISOString().split('T')[0]);
+          const [uploadCampaignName, setUploadCampaignName] = useState('');
+          const [uploadProduct, setUploadProduct] = useState('EXP');
+          const [pastedData, setPastedData] = useState('');
+
+          const [collabForm, setCollabForm] = useState({
+            id: '', kolId: '', quoteId: '', campaignName: '', product: 'EXP', specs: [],
+            postLink: '', reach: '', views: '', likes: '', shares: '', comments: '',
+            warningNotes: '', ratingCooperation: 5, ratingSatisfaction: 5
+          });
+
+          useEffect(() => {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+          }, [activeTab, selectedKOL, showCollabModal]);
+
+          // 產品線快速篩選與搜尋
+          const filteredKOLs = useMemo(() => {
+            return kols.filter(kol => {
+              const matchSearch = kol.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  kol.type.toLowerCase().includes(searchTerm.toLowerCase());
+              const matchType = selectedTypeFilter ? kol.type.includes(selectedTypeFilter) : true;
+              
+              let matchProduct = true;
+              if (selectedProductTab !== 'ALL') {
+                const hasQuote = quotes.some(q => q.kolId === kol.id && q.product === selectedProductTab);
+                const hasCollab = collaborations.some(c => c.kolId === kol.id && c.product === selectedProductTab);
+                matchProduct = hasQuote || hasCollab;
+              }
+              return matchSearch && matchType && matchProduct;
+            });
+          }, [kols, quotes, collaborations, searchTerm, selectedTypeFilter, selectedProductTab]);
+
+          const handleQuickCollab = (kolId = '') => {
+            const existing = collaborations.find(c => c.kolId === kolId);
+            const matchedQuote = quotes.find(q => q.kolId === kolId);
+            setCollabForm(existing ? { ...existing } : {
+              id: '', kolId: kolId, quoteId: matchedQuote ? matchedQuote.id : '', campaignName: '', product: 'EXP',
+              specs: [], postLink: '', reach: '', views: '', likes: '', shares: '', comments: '',
+              warningNotes: '', ratingCooperation: 5, ratingSatisfaction: 5
+            });
+            setShowCollabModal(true);
+          };
+
+          const handleSaveCollab = (e) => {
+            e.preventDefault();
+            const matchedQuote = quotes.find(q => q.id === collabForm.quoteId);
+            const newCollab = {
+              ...collabForm,
+              id: collabForm.id || 'collab_' + Date.now(),
+              campaignName: matchedQuote ? matchedQuote.campaignName : '常態推廣',
+              product: matchedQuote ? matchedQuote.product : 'EXP',
+              reach: Number(collabForm.reach) || 0,
+              views: Number(collabForm.views) || 0,
+              likes: Number(collabForm.likes) || 0,
+              shares: Number(collabForm.shares) || 0,
+              comments: Number(collabForm.comments) || 0,
+            };
+
+            const idx = collaborations.findIndex(c => c.kolId === collabForm.kolId);
+            if (idx >= 0) {
+              const updated = [...collaborations];
+              updated[idx] = newCollab;
+              setCollaborations(updated);
+            } else {
+              setCollaborations([newCollab, ...collaborations]);
+            }
+            setShowCollabModal(false);
+          };
+
+          const handleSimulatedUpload = () => {
+            if (!uploadVendor || !uploadCampaignName) {
+              alert('請填寫完整 Campaign Name 與 報價廠商！');
+              return;
+            }
+            const newKolId = 'kol_' + Date.now();
+            const newKol = {
+              id: newKolId,
+              name: "林小野 Life",
+              type: "生活日常 / 辦公室日常",
+              links: { fb: "", ig: "https://instagram.com/wild_forest_life", yt: "", tiktok: "" },
+              followers: { fb: 0, ig: 120000, yt: 0, tiktok: 0 },
+              videoViews: 32000,
+              genderRatio: { male: 35, female: 65 },
+              ageRatio: { "18-24": 25, "25-34": 50, "35-44": 20, "45+": 5 },
+              recommendedPlatform: "Instagram",
+              recommendReason: "日常置入推薦，適合主打 HICEE 維他命C與元氣補給形象。"
+            };
+            const newQuote = {
+              id: 'quote_' + Date.now(),
+              kolId: newKolId,
+              campaignName: uploadCampaignName,
+              product: uploadProduct,
+              vendor: uploadVendor,
+              inquiryDate: uploadDate,
+              prices: { verticalVideo: 30000, multiImage: 22000 }
+            };
+
+            setKols([newKol, ...kols]);
+            setQuotes([newQuote, ...quotes]);
+            alert('已成功模擬解析 Excel 數據，並將新方案成功同步！');
+            setActiveTab('database');
+          };
+
+          const loadDemoExcelText = () => {
+            setPastedData("林小野 Life\t生活日常\thttps://instagram.com/wild_forest_life\t120000\t32000\t男35%女65%\t25-34歲50%\tInstagram\t22000\t30000\t2個月\t8000");
+            setUploadCampaignName("2026年Q2 HICEE好物推薦案");
+            setUploadProduct("HICEE");
+            setUploadVendor("快點數位行銷");
+          };
+
+          const formatPrice = (val) => {
+            if (val === undefined || val === null || val === 0) return <span className="text-slate-300 italic font-normal">未詢價</span>;
+            return <strong className="text-slate-900 font-extrabold font-mono">${val.toLocaleString()}</strong>;
+          };
+
+          return (
+            <div className="flex flex-col min-h-screen">
+              
+              {/* ==================== 頂部導覽列 (合利他命專屬日系紅金) ==================== */}
+              <header className="bg-gradient-to-r from-red-700 via-red-600 to-amber-600 text-white shadow-md">
+                <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-white px-2 py-1.5 rounded-lg text-red-600 font-black text-xl tracking-wider shadow-inner">合利他命</div>
+                    <div>
+                      <h1 className="text-md font-bold">KOL 詢價與合作成效智庫</h1>
+                      <p className="text-[10px] text-red-100 font-light">內部品牌營銷部專用 • 數據安全加密與防踩雷系統</p>
+                    </div>
+                  </div>
+                  
+                  {/* 最明顯的全局一鍵登載入口 */}
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => handleQuickCollab()}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black px-4 py-2 rounded-lg shadow-md flex items-center gap-1.5 transition-all"
+                    >
+                      <i data-lucide="edit-3" class="w-4 h-4"></i>
+                      📝 登載合作成效 (Post-buy)
+                    </button>
+                    <nav className="flex bg-red-800/40 p-1 rounded-xl text-xs font-bold">
+                      <button onClick={() => setActiveTab('database')} className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'database' ? 'bg-white text-red-700 shadow-sm' : 'text-white'}`}>KOL 詢價查詢</button>
+                      <button onClick={() => setActiveTab('showcase')} className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'showcase' ? 'bg-white text-red-700 shadow-sm' : 'text-white'}`}>📱 合作成效看板</button>
+                      <button onClick={() => setActiveTab('upload')} className={`px-3 py-1.5 rounded-lg transition-all ${activeTab === 'upload' ? 'bg-white text-red-700 shadow-sm' : 'text-white'}`}>批次匯入報價</button>
+                    </nav>
+                  </div>
+                </div>
+              </header>
+
+              {/* ==================== 產品線快速篩選 Tab (符合需求 5) ==================== */}
+              <section className="bg-white border-b border-slate-200 py-3 shadow-xs">
+                <div className="max-w-7xl mx-auto px-4 flex flex-wrap gap-2 items-center">
+                  <span className="text-xs font-extrabold text-slate-400 mr-2">產品線篩選：</span>
+                  {['ALL', 'EXP', 'EXG', 'A25', 'HICEE', 'Controloc'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setSelectedProductTab(p)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition ${selectedProductTab === p ? 'bg-red-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      {p === 'ALL' ? '全部人選' : `${p} 系列`}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* ==================== 主要工作區 ==================== */}
+              <main className="flex-grow max-w-7xl w-full mx-auto px-4 py-8">
+                
+                {/* 頁籤 1: 查詢與比價首頁 */}
+                {activeTab === 'database' && (
+                  <div className="space-y-6">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+                      <div className="relative w-full md:w-80">
+                        <input 
+                          type="text" 
+                          placeholder="搜尋 KOL 姓名、分類..." 
+                          className="border border-slate-300 rounded-xl p-3 text-xs w-full focus:ring-2 focus:ring-red-500 focus:outline-none"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      <select 
+                        value={selectedTypeFilter} 
+                        onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                        className="border border-slate-300 rounded-xl p-3 text-xs focus:ring-2 focus:ring-red-500"
+                      >
+                        <option value="">所有社群分類</option>
+                        <option value="美食">美食生活 / 實測</option>
+                        <option value="醫療">專業醫療 / 養生</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {filteredKOLs.map(kol => {
+                        const kolQuotes = quotes.filter(q => q.kolId === kol.id);
+                        const latestQuote = [...kolQuotes].sort((a,b) => new Date(b.inquiryDate) - new Date(a.inquiryDate))[0];
+                        const collab = collaborations.find(c => c.kolId === kol.id);
+                        return (
+                          <div key={kol.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                            
+                            {/* 卡片頭部 (符合需求 6: 極簡狀態標籤) */}
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-start">
+                              <div>
+                                <span className="bg-red-50 text-red-700 text-[10px] px-2.5 py-1 rounded-full font-bold border border-red-100">{kol.type}</span>
+                                <h3 className="text-lg font-black mt-2 text-slate-900">{kol.name}</h3>
+                              </div>
+                              <span className={`text-[10px] font-black px-3 py-1 rounded-full ${collab ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                                {collab ? '🟢 已合作過' : '⚪ 未合作過'}
+                              </span>
+                            </div>
+
+                            {/* 卡片主體 (移除了推薦原因，使視覺聚焦) */}
+                            <div className="p-6 space-y-4 flex-grow">
+                              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                                <div className="flex justify-between items-center text-xs text-slate-400 pb-2 border-b border-slate-200">
+                                  <span className="font-bold">最新單期詢價</span>
+                                  {latestQuote && <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">{latestQuote.product} 線</span>}
+                                </div>
+                                {latestQuote ? (
+                                  <div className="space-y-1.5 text-xs text-slate-700">
+                                    <p>Campaign: <strong className="text-slate-900">{latestQuote.campaignName}</strong></p>
+                                    <p>報價廠商: <strong className="text-slate-900">{latestQuote.vendor} ({latestQuote.inquiryDate})</strong></p>
+                                    
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                                        <span className="text-[10px] text-slate-400 block font-bold">短影音</span>
+                                        {formatPrice(latestQuote.prices.verticalVideo)}
+                                      </div>
+                                      <div className="bg-white p-2 rounded-lg border border-slate-200">
+                                        <span className="text-[10px] text-slate-400 block font-bold">多圖貼文</span>
+                                        {formatPrice(latestQuote.prices.multiImage)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : <p className="text-xs text-slate-400 py-2">目前尚無本系列產品之詢價紀錄</p>}
+                              </div>
+
+                              {collab && collab.warningNotes && (
+                                <div className="bg-red-50 text-red-900 p-3 rounded-xl text-xs">
+                                  <strong className="text-red-700 font-bold">⚠️ 避坑提醒：</strong>{collab.warningNotes}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 卡片底部操作區 */}
+                            <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                              <button onClick={() => setSelectedKOL(kol)} className="text-red-700 font-black hover:underline flex items-center gap-1">
+                                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                                查看比價歷史與推薦原因 →
+                              </button>
+                              <button onClick={() => handleQuickCollab(kol.id)} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold">
+                                登載成效
+                              </button>
+                            </div>
+
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 頁籤 2: 合作成效實體預覽看板 (包含 Dinner Lin Shorts 真實預覽) */}
+                {activeTab === 'showcase' && (
+                  <div className="space-y-6 animate-fade-in">
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200">
+                       followers: { fb: 0, ig: 180000, yt: 450000, tiktok: 0 },
             videoViews: 1680000,
             genderRatio: { male: 40, female: 60 },
             ageRatio: { "18-24": 30, "25-34": 50, "35-44": 15, "45+": 5 },

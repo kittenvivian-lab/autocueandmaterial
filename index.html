@@ -1,40 +1,555 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head> 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>媒體工具箱 Pro | 單機版 v3 (進階版位與多重走期)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-  :root{
-    --ink:#1c2b33; --paper:#f8f9fa; --line:#e0e4e8;
-    --primary:#254EDB; --primary-hover:#1D3DB3; --primary-soft:#EDF1FF;
-    --warn:#D93025; --warn-soft:#FCE8E6;
-    --muted:#5f6368; --card:#ffffff;
-    font-family:-apple-system,"PingFang TC","Microsoft JhengHei",Segoe UI,sans-serif;
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Search, Upload, Download, Calendar, Building2, Users, DollarSign, 
+  Star, AlertTriangle, ExternalLink, CheckCircle2, TrendingUp, Info, 
+  ArrowUpDown, Filter, Plus, MessageSquare, Trash2, Globe, Heart, Eye, ThumbsUp, Tag, Edit3, Check
+} from 'lucide-react';
+
+// Firebase SDK 初始化
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, addDoc, getDocs, onSnapshot } from 'firebase/firestore';
+
+// ==================== 初始 Mock 資料 ====================
+const INITIAL_KOLS = [
+  {
+    id: "kol_001",
+    name: "Dinner Lin",
+    type: "美食生活 / 實測好物",
+    links: {
+      fb: "",
+      ig: "https://instagram.com/dinner_lin",
+      yt: "https://youtube.com/shorts/cgqutkKB2oY?si=6Iey6u3dA8oFygjR",
+      tiktok: ""
+    },
+    followers: { fb: 0, ig: 180000, yt: 450000, tiktok: 0 },
+    videoViews: 1680000,
+    genderRatio: { male: 40, female: 60 },
+    ageRatio: { "18-24": 30, "25-34": 50, "35-44": 15, "45+": 5 },
+    recommendedPlatform: "YouTube Shorts",
+    recommendReason: "節奏極快、受眾黏著度高。適合用好市多爆紅好物實測的邏輯，置入合利他命 HICEE 或 A25 每日辦公必備好物。"
+  },
+  {
+    id: "kol_002",
+    name: "陳醫師的健康生活",
+    type: "專業醫療 / 養生保健",
+    links: {
+      fb: "https://facebook.com/dr_chen_health",
+      ig: "https://instagram.com/dr_chen_ig",
+      yt: "https://youtube.com/c/dr_chen_health",
+      tiktok: ""
+    },
+    followers: { fb: 150000, ig: 80000, yt: 120000, tiktok: 0 },
+    videoViews: 45000,
+    genderRatio: { male: 45, female: 55 },
+    ageRatio: { "18-24": 10, "25-34": 40, "35-44": 35, "45+": 15 },
+    recommendedPlatform: "YouTube",
+    recommendReason: "身分具備專業醫師執照，講解合利他命 EXP 的維生素 B 群與高單位活性 B1 (Fursultiamine) 科學原理極具說服力。"
   }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--paper);color:var(--ink); line-height:1.5;}
-  header{padding:24px 32px 0; background:var(--card); border-bottom:1px solid var(--line);}
-  h1{font-size:22px; margin:0 0 4px; font-weight:600;}
-  .sub{color:var(--muted); font-size:13px; margin-bottom:16px;}
-  nav{display:flex; gap:24px; padding:0 32px; flex-wrap:wrap; background:var(--card); border-bottom:1px solid var(--line);}
-  nav button{
-    background:none; border:none; padding:14px 4px; font-size:14px; color:var(--muted);
-    cursor:pointer; border-bottom:3px solid transparent; font-weight:500;
+];
+
+const INITIAL_QUOTES = [
+  {
+    id: "quote_001",
+    kolId: "kol_001",
+    campaignName: "2026年Q2 HICEE好物推薦案",
+    product: "HICEE",
+    vendor: "快點數位行銷",
+    inquiryDate: "2026-04-10",
+    prices: {
+      verticalVideo: 45000, // 這次只詢了這兩項
+      multiImage: 25000
+    },
+    authDuration: "3個月",
+    authCost: 10000
+  },
+  {
+    id: "quote_002",
+    kolId: "kol_001",
+    campaignName: "2026年Q3 A25通路推廣案",
+    product: "A25",
+    vendor: "星潮娛樂媒體",
+    inquiryDate: "2026-06-01",
+    prices: {
+      singleImage: 22000, // 別家報了不同規格
+      ytHorizontalVideo: 85000
+    },
+    authDuration: "3個月",
+    authCost: 12000
   }
-  nav button:hover{color:var(--primary);}
-  nav button.active{color:var(--primary); border-bottom-color:var(--primary); font-weight:600;}
-  main{padding:32px; max-width:1200px; margin:0 auto;}
-  .panel{display:none;} .panel.active{display:block;}
-  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.02);}
-  .card h2{font-size:16px; margin:0 0 16px; font-weight:600;}
-  label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px; font-weight:500;}
-  input, select, textarea{
-    width:100%; padding:10px 12px; border:1px solid #ced4da; border-radius:8px;
-    font-size:14px; background:#fff;
+];
+
+const INITIAL_COLLABORATIONS = [
+  {
+    id: "collab_001",
+    kolId: "kol_001",
+    quoteId: "quote_001",
+    campaignName: "2026年Q2 HICEE好物推薦案",
+    product: "HICEE",
+    specs: ["verticalVideo"],
+    postLink: "https://youtube.com/shorts/cgqutkKB2oY?si=6Iey6u3dA8oFygjR",
+    // 精準拆分之數據欄位 (符合需求 2)
+    reach: 1850000,
+    views: 1687446,
+    likes: 27480,
+    shares: 8400,
+    comments: 920,
+    warningNotes: "Dinner Lin 腳本審查配合度高，但對於業配產品的置入切角要求生活化、不接受生硬的大字報，文案需保留創作者語氣。",
+    ratingCooperation: 5,
+    ratingSatisfaction: 5
   }
-  .row{display:flex; gap:16px; flex-wrap:wrap; align-items:end;} .row > div{flex:1; min-width:180px;}
+];
+
+// ==================== Firebase 雲端初始化配置 ====================
+let app, auth, db, appId;
+appId = typeof __app_id !== 'undefined' ? __app_id : 'alinamin-kol-db';
+
+if (typeof __firebase_config !== 'undefined') {
+  try {
+    const firebaseConfig = JSON.parse(__firebase_config);
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+  } catch (e) {
+    console.error("Firebase config parsing error", e);
+  }
+}
+
+export default function App() {
+  // ==================== React States ====================
+  const [user, setUser] = useState(null);
+  const [kols, setKols] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [collaborations, setCollaborations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const [activeTab, setActiveTab] = useState('database'); // database, showcase, upload, template
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState('');
+  const [selectedProductTab, setSelectedProductTab] = useState('ALL'); // EXP, EXG, A25, HICEE, Controloc, ALL (快速產品線篩選)
+  const [selectedKOL, setSelectedKOL] = useState(null); 
+  
+  // 自訂彈出通知 UI
+  const [notification, setNotification] = useState(null);
+
+  // 批次上傳 State
+  const [uploadVendor, setUploadVendor] = useState('');
+  const [uploadDate, setUploadDate] = useState(new Date().toISOString().split('T')[0]);
+  const [uploadCampaignName, setUploadCampaignName] = useState('');
+  const [uploadProduct, setUploadProduct] = useState('EXP');
+  const [pastedData, setPastedData] = useState('');
+  const [uploadMessage, setUploadMessage] = useState(null);
+
+  // 成效登載/更新 Modal State (改為全域一鍵登載)
+  const [showCollabModal, setShowCollabModal] = useState(false);
+  const [collabForm, setCollabForm] = useState({
+    id: '',
+    kolId: '',
+    quoteId: '',
+    campaignName: '',
+    product: 'EXP',
+    specs: [],
+    postLink: '',
+    reach: '',
+    views: '',
+    likes: '',
+    shares: '',
+    comments: '',
+    warningNotes: '',
+    ratingCooperation: 5,
+    ratingSatisfaction: 5
+  });
+
+  // ==================== Firebase 同步 ====================
+  useEffect(() => {
+    if (!db) {
+      setKols(INITIAL_KOLS);
+      setQuotes(INITIAL_QUOTES);
+      setCollaborations(INITIAL_COLLABORATIONS);
+      setLoading(false);
+      return;
+    }
+
+    const initAuth = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (e) {
+        console.error("Firebase authentication error", e);
+      }
+    };
+    initAuth();
+
+    const unsubscribeAuth = onAuthStateChanged(auth, setUser);
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!db || !user) return;
+
+    const unsubscribeKols = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'kols'),
+      async (snapshot) => {
+        let list = [];
+        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+        if (list.length === 0) {
+          for (let item of INITIAL_KOLS) {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'kols', item.id), item);
+          }
+        } else {
+          setKols(list);
+        }
+      }
+    );
+
+    const unsubscribeQuotes = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'quotes'),
+      async (snapshot) => {
+        let list = [];
+        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+        if (list.length === 0) {
+          for (let item of INITIAL_QUOTES) {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quotes', item.id), item);
+          }
+        } else {
+          setQuotes(list);
+        }
+      }
+    );
+
+    const unsubscribeCollaborations = onSnapshot(
+      collection(db, 'artifacts', appId, 'public', 'data', 'collaborations'),
+      async (snapshot) => {
+        let list = [];
+        snapshot.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+        if (list.length === 0) {
+          for (let item of INITIAL_COLLABORATIONS) {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'collaborations', item.id), item);
+          }
+        } else {
+          setCollaborations(list);
+        }
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribeKols();
+      unsubscribeQuotes();
+      unsubscribeCollaborations();
+    };
+  }, [user]);
+
+  // ==================== 統計數據 ====================
+  const stats = useMemo(() => {
+    return {
+      totalKols: kols.length,
+      totalQuotes: quotes.length,
+      totalCollabs: collaborations.length
+    };
+  }, [kols, quotes, collaborations]);
+
+  // ==================== 篩選 KOL (產品線 Tab 快速篩選) ====================
+  const filteredKOLs = useMemo(() => {
+    return kols.filter(kol => {
+      const matchSearch = kol.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          kol.type.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchType = selectedTypeFilter ? kol.type.includes(selectedTypeFilter) : true;
+      
+      // 快速篩選產品線 (EXP/EXG/A25/HICEE/Controloc)
+      let matchProduct = true;
+      if (selectedProductTab !== 'ALL') {
+        const hasQuote = quotes.some(q => q.kolId === kol.id && q.product === selectedProductTab);
+        const hasCollab = collaborations.some(c => c.kolId === kol.id && c.product === selectedProductTab);
+        matchProduct = hasQuote || hasCollab;
+      }
+
+      return matchSearch && matchType && matchProduct;
+    });
+  }, [kols, quotes, collaborations, searchTerm, selectedTypeFilter, selectedProductTab]);
+
+  const showNotice = (title, message, type = 'success') => {
+    setNotification({ title, message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  // ==================== 上傳與手動匯入 ====================
+  const handleSimulatedUpload = async () => {
+    if (!uploadVendor || !uploadDate || !uploadCampaignName) {
+      setUploadMessage({ type: 'error', text: '請確實填寫所有必填欄位！' });
+      return;
+    }
+
+    const newKolId = `kol_${Date.now()}`;
+    const newKol = {
+      id: newKolId,
+      name: "林小野 Life",
+      type: "生活日常 / 辦公室日常",
+      links: { fb: "", ig: "https://instagram.com/wild_forest_life", yt: "", tiktok: "" },
+      followers: { fb: 0, ig: 120000, yt: 0, tiktok: 0 },
+      videoViews: 32000,
+      genderRatio: { male: 35, female: 65 },
+      ageRatio: { "18-24": 25, "25-34": 50, "35-44": 20, "45+": 5 },
+      recommendedPlatform: "Instagram",
+      recommendReason: "上班族日常置入，適合包裝合利他命舒緩熬夜、維持精神的產品形象。"
+    };
+
+    const newQuote = {
+      id: `quote_${Date.now()}`,
+      kolId: newKolId,
+      campaignName: uploadCampaignName,
+      product: uploadProduct,
+      vendor: uploadVendor,
+      inquiryDate: uploadDate,
+      prices: {
+        verticalVideo: 30000,
+        multiImage: 22000
+      },
+      authDuration: "2個月",
+      authCost: 8000
+    };
+
+    if (db && user) {
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'kols', newKolId), newKol);
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quotes', newQuote.id), newQuote);
+    } else {
+      setKols(prev => [newKol, ...prev]);
+      setQuotes(prev => [newQuote, ...prev]);
+    }
+
+    showNotice("匯入成功", `已成功匯入 KOL【${newKol.name}】至 HICEE 產品資料庫！`);
+    setPastedData('');
+    setUploadVendor('');
+    setUploadCampaignName('');
+    
+    setTimeout(() => {
+      setActiveTab('database');
+      setUploadMessage(null);
+    }, 1000);
+  };
+
+  const loadDemoExcelText = () => {
+    setPastedData("林小野 Life\t生活日常\thttps://instagram.com/wild_forest_life\t120000\t32000\t男35%女65%\t25-34歲50%\tInstagram\t22000\t30000\t2個月\t8000");
+    setUploadCampaignName("2026年Q2 HICEE好物推薦案");
+    setUploadProduct("HICEE");
+    setUploadVendor("快點數位行銷");
+  };
+
+  // ==================== 儲存合作成效數據 ====================
+  const handleSaveCollaboration = async (e) => {
+    e.preventDefault();
+    if (!collabForm.kolId || !collabForm.quoteId) {
+      showNotice("欄位缺失", "請務必選定 KOL 與採用的報價方案！", "error");
+      return;
+    }
+
+    const matchedQuote = quotes.find(q => q.id === collabForm.quoteId);
+    const updatedForm = {
+      ...collabForm,
+      id: collabForm.id || `collab_${Date.now()}`,
+      campaignName: matchedQuote ? matchedQuote.campaignName : collabForm.campaignName,
+      product: matchedQuote ? matchedQuote.product : collabForm.product,
+      // 確保數據以純數字存檔
+      reach: Number(collabForm.reach) || 0,
+      views: Number(collabForm.views) || 0,
+      likes: Number(collabForm.likes) || 0,
+      shares: Number(collabForm.shares) || 0,
+      comments: Number(collabForm.comments) || 0,
+    };
+
+    if (db && user) {
+      await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'collaborations', updatedForm.id), updatedForm);
+    } else {
+      const existsIndex = collaborations.findIndex(c => c.kolId === updatedForm.kolId);
+      if (existsIndex >= 0) {
+        const updated = [...collaborations];
+        updated[existsIndex] = updatedForm;
+        setCollaborations(updated);
+      } else {
+        setCollaborations(prev => [updatedForm, ...prev]);
+      }
+    }
+
+    setShowCollabModal(false);
+    showNotice("數據存檔成功", "KOL 結案成效數據已即時同步雲端！");
+  };
+
+  // 快速開啟成效登載 Modal (全域按鈕 + 卡片按鈕通用)
+  const openCollabEditor = (kolId = '') => {
+    let baseForm = {
+      id: '',
+      kolId: kolId,
+      quoteId: '',
+      campaignName: '',
+      product: 'EXP',
+      specs: [],
+      postLink: '',
+      reach: '',
+      views: '',
+      likes: '',
+      shares: '',
+      comments: '',
+      warningNotes: '',
+      ratingCooperation: 5,
+      ratingSatisfaction: 5
+    };
+
+    if (kolId) {
+      const existing = collaborations.find(c => c.kolId === kolId);
+      const matchedQuote = quotes.find(q => q.kolId === kolId);
+      if (existing) {
+        baseForm = { ...existing };
+      } else if (matchedQuote) {
+        baseForm.quoteId = matchedQuote.id;
+      }
+    }
+
+    setCollabForm(baseForm);
+    setShowCollabModal(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col antialiased">
+      
+      {/* ==================== 精緻自訂通知 UI ==================== */}
+      {notification && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full bg-slate-900 text-white rounded-xl shadow-2xl p-4 border-l-4 border-red-600 animate-bounce">
+          <div className="flex items-start">
+            <div className="ml-3">
+              <p className="text-sm font-bold">{notification.title}</p>
+              <p className="mt-1 text-xs text-slate-300">{notification.message}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 頂部導覽列 (Alinamin 日系奢華配色) ==================== */}
+      <header className="bg-gradient-to-r from-red-700 via-red-600 to-amber-600 text-white shadow-md sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="bg-white p-2 rounded-md shadow-inner flex items-center justify-center">
+              <span className="text-red-600 font-black text-xl tracking-wider">合利他命</span>
+            </div>
+            <div>
+              <h1 className="text-lg font-extrabold tracking-tight">KOL 詢價與合作成效智庫</h1>
+              <p className="text-xs text-red-100 font-light">內部專用 • 防踩雷與 Post-buy 結案數據庫</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* UI/UX 優化：直接置頂最核心的「登載合作成效」按鈕 */}
+            <button
+              onClick={() => openCollabEditor()}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-black px-4 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 shadow-md transition-all"
+            >
+              <Edit3 className="w-4 h-4" />
+              📝 登載合作成效 (Post-buy)
+            </button>
+
+            <nav className="flex gap-1 bg-red-800/40 p-1.5 rounded-xl">
+              <button 
+                onClick={() => setActiveTab('database')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'database' ? 'bg-white text-red-700 shadow' : 'text-white hover:bg-red-700/50'}`}
+              >
+                KOL 詢價查詢
+              </button>
+              <button 
+                onClick={() => setActiveTab('showcase')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'showcase' ? 'bg-white text-red-700 shadow' : 'text-white hover:bg-red-700/50'}`}
+              >
+                📱 合作成效看板
+              </button>
+              <button 
+                onClick={() => setActiveTab('upload')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'upload' ? 'bg-white text-red-700 shadow' : 'text-white hover:bg-red-700/50'}`}
+              >
+                批次匯入報價
+              </button>
+              <button 
+                onClick={() => setActiveTab('template')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === 'template' ? 'bg-white text-red-700 shadow' : 'text-white hover:bg-red-700/50'}`}
+              >
+                Excel 規範
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {/* ==================== 快速產品線 Tab 篩選 (符合需求 5 - 捨棄無用指標，改為直覺產品切換) ==================== */}
+      <section className="bg-white border-b border-slate-200 py-4 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-1.5">
+              <span className="text-xs font-bold text-slate-400 self-center mr-2 uppercase tracking-wider">產品線篩選：</span>
+              {[
+                { key: 'ALL', label: '全部人選' },
+                { key: 'EXP', label: 'EXP (黃金強效錠)' },
+                { key: 'EXG', label: 'EXG (強效錠)' },
+                { key: 'A25', label: 'A25 (日常活力)' },
+                { key: 'HICEE', label: 'HICEE (維他命C)' },
+                { key: 'Controloc', label: 'Controloc (胃藥)' }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setSelectedProductTab(tab.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${selectedProductTab === tab.key ? 'bg-red-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="text-xs text-slate-500 font-semibold bg-slate-100 px-3 py-1.5 rounded-lg">
+              KOL 庫總計：{stats.totalKols} 位 | 詢價總筆數：{stats.totalQuotes} 筆
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== 主要工作區 ==================== */}
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-red-600"></div>
+            <p className="text-xs text-slate-500 mt-2">資料庫同步中...</p>
+          </div>
+        )}
+
+        {/* ==================== 頁籤 1: KOL 資料庫主查詢 ==================== */}
+        {!loading && activeTab === 'database' && (
+          <div className="space-y-6">
+            
+            {/* 搜尋與過濾列 */}
+            <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3.5 top-3.5 text-slate-400 w-5 h-5" />
+                <input 
+                  type="text" 
+                  placeholder="搜尋 KOL 姓名、類型或主要社群平台..." 
+                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm transition"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <select
+                  value={selectedTypeFilter}
+                  onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                  className="px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-medium text-slate-700"
+                >
+                  <option value="">所有 KOL 類型</option>
+                  <option value="醫療">專業醫療</option>
+                  <option value="運動">運動健身</option>
+                  <option value="生活">生活日常</option>
+                </select>
+              </div>
+            </div>
+
+            {/* KOL 列表與卡片 (符合需求 6 & 1: 移除首頁推薦原因、極簡合作狀態標籤) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredKOLs.map((ko  .row{display:flex; gap:16px; flex-wrap:wrap; align-items:end;} .row > div{flex:1; min-width:180px;}
   button.btn{
     background:var(--primary); color:#fff; border:none; padding:10px 20px; border-radius:8px;
     font-size:14px; font-weight:500; cursor:pointer;

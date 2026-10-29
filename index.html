@@ -1,448 +1,369 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Apex Studio | 數位創新與品牌設計</title>
-  <style>
-    /* 基礎重置與全域變數 */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>團隊進度看板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        } 
+        /* 自訂滾動條 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
 
-    :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --bg-dark: #0f172a;
-      --bg-surface: #ffffff;
-      --bg-alt: #f8fafc;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
-      --radius: 12px;
-      --transition: all 0.3s ease;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-    }
+        /* 🎨 主題切換按鈕視覺 */
+        .theme-dot { transition: transform 0.15s, box-shadow 0.15s; }
+        .theme-dot.active {
+            border-color: white !important;
+            transform: scale(1.35);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.3);
+        }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
-      line-height: 1.6;
-      color: var(--text-main);
-      background-color: var(--bg-surface);
-      scroll-behavior: smooth;
-    }
+        /* ══════════════════════════════════════════════════
+           🎨 保留既有主題設定（疏林茶煙 / 窗纱香灰 / 远山素影 / 芦汀初雪）
+        ══════════════════════════════════════════════════ */
+        [data-theme="chayen"] header { background: linear-gradient(to right, #8c6a54, #CBAF98, #DBB9A4) !important; }
+        [data-theme="chayen"] body { background-color: #EDE0D0 !important; }
+        [data-theme="chayen"] .bg-indigo-600 { background-color: #a88060 !important; }
+        [data-theme="chayen"] .hover\:bg-indigo-700:hover { background-color: #8c6a54 !important; }
+        [data-theme="chayen"] .bg-indigo-950, [data-theme="chayen"] .bg-indigo-900 { background-color: #5c3e2a !important; }
+        [data-theme="chayen"] .text-indigo-300 { color: #e8ceb8 !important; }
+        [data-theme="chayen"] .text-indigo-600 { color: #a88060 !important; }
+        [data-theme="chayen"] .text-indigo-700 { color: #8c6a54 !important; }
+        [data-theme="chayen"] .text-indigo-400 { color: #CBAF98 !important; }
+        [data-theme="chayen"] .bg-indigo-50 { background-color: #f5ede4 !important; }
+        [data-theme="chayen"] .bg-indigo-100 { background-color: #ead8c8 !important; }
+        [data-theme="chayen"] .border-indigo-400\/30 { border-color: rgba(203,175,152,0.35) !important; }
+        [data-theme="chayen"] .hover\:bg-indigo-50:hover { background-color: #f5ede4 !important; }
+        [data-theme="chayen"] .hover\:text-indigo-600:hover { color: #a88060 !important; }
+        [data-theme="chayen"] .text-teal-700 { color: #8c6a54 !important; }
+        [data-theme="chayen"] .bg-teal-600 { background-color: #a88060 !important; }
+        [data-theme="chayen"] .bg-teal-50 { background-color: #f5ede4 !important; }
+        [data-theme="chayen"] .bg-emerald-600 { background-color: #9e8264 !important; }
+        [data-theme="chayen"] .hover\:bg-emerald-700:hover { background-color: #8c6a54 !important; }
+        [data-theme="chayen"] .bg-emerald-50 { background-color: #f0e8de !important; }
+        [data-theme="chayen"] .text-emerald-700 { color: #8c6a54 !important; }
 
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
+        [data-theme="chuangsha"] header { background: linear-gradient(to right, #6a5e8a, #B6A9C8, #A09BC3) !important; }
+        [data-theme="chuangsha"] body { background-color: #D8E6EA !important; }
+        [data-theme="chuangsha"] .bg-indigo-600 { background-color: #8a7daa !important; }
+        [data-theme="chuangsha"] .hover\:bg-indigo-700:hover { background-color: #6a5e8a !important; }
+        [data-theme="chuangsha"] .bg-indigo-950, [data-theme="chuangsha"] .bg-indigo-900 { background-color: #3d3460 !important; }
+        [data-theme="chuangsha"] .text-indigo-300 { color: #cec8e0 !important; }
+        [data-theme="chuangsha"] .text-indigo-600 { color: #8a7daa !important; }
+        [data-theme="chuangsha"] .text-indigo-700 { color: #6a5e8a !important; }
+        [data-theme="chuangsha"] .text-indigo-400 { color: #B6A9C8 !important; }
+        [data-theme="chuangsha"] .bg-indigo-50 { background-color: #eceaf5 !important; }
+        [data-theme="chuangsha"] .bg-indigo-100 { background-color: #d8d4ed !important; }
+        [data-theme="chuangsha"] .hover\:bg-indigo-50:hover { background-color: #eceaf5 !important; }
+        [data-theme="chuangsha"] .hover\:text-indigo-600:hover { color: #8a7daa !important; }
+        [data-theme="chuangsha"] .text-teal-700 { color: #5e8090 !important; }
+        [data-theme="chuangsha"] .bg-teal-600 { background-color: #6e9aab !important; }
+        [data-theme="chuangsha"] .bg-teal-50 { background-color: #e4f0f4 !important; }
+        [data-theme="chuangsha"] .bg-emerald-600 { background-color: #6e9aab !important; }
+        [data-theme="chuangsha"] .bg-emerald-50 { background-color: #e4f0f4 !important; }
+        [data-theme="chuangsha"] .text-emerald-700 { color: #4e8090 !important; }
 
-    ul {
-      list-style: none;
-    }
+        [data-theme="yuanshan"] header { background: linear-gradient(to right, #6888b8, #A8BEDF, #C7D5E8) !important; }
+        [data-theme="yuanshan"] body { background-color: #EFE4D4 !important; }
+        [data-theme="yuanshan"] .bg-indigo-600 { background-color: #6888b8 !important; }
+        [data-theme="yuanshan"] .hover\:bg-indigo-700:hover { background-color: #5070a0 !important; }
+        [data-theme="yuanshan"] .bg-indigo-950, [data-theme="yuanshan"] .bg-indigo-900 { background-color: #2c4870 !important; }
+        [data-theme="yuanshan"] .text-indigo-300 { color: #c0d0e8 !important; }
+        [data-theme="yuanshan"] .text-indigo-600 { color: #6888b8 !important; }
+        [data-theme="yuanshan"] .text-indigo-700 { color: #5070a0 !important; }
+        [data-theme="yuanshan"] .text-indigo-400 { color: #A8BEDF !important; }
+        [data-theme="yuanshan"] .bg-indigo-50 { background-color: #e8eef8 !important; }
+        [data-theme="yuanshan"] .bg-indigo-100 { background-color: #d4e0f0 !important; }
+        [data-theme="yuanshan"] .hover\:bg-indigo-50:hover { background-color: #e8eef8 !important; }
+        [data-theme="yuanshan"] .hover\:text-indigo-600:hover { color: #6888b8 !important; }
+        [data-theme="yuanshan"] .text-teal-700 { color: #5070a0 !important; }
+        [data-theme="yuanshan"] .bg-teal-600 { background-color: #6888b8 !important; }
+        [data-theme="yuanshan"] .bg-teal-50 { background-color: #e8eef8 !important; }
+        [data-theme="yuanshan"] .bg-emerald-600 { background-color: #789898 !important; }
+        [data-theme="yuanshan"] .bg-emerald-50 { background-color: #e4eeee !important; }
+        [data-theme="yuanshan"] .text-emerald-700 { color: #587888 !important; }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-    }
+        [data-theme="luting"] header { background: linear-gradient(to right, #5a8068, #A1C1A1, #8BA995) !important; }
+        [data-theme="luting"] body { background-color: #DFDAD3 !important; }
+        [data-theme="luting"] .bg-indigo-600 { background-color: #7aaa88 !important; }
+        [data-theme="luting"] .hover\:bg-indigo-700:hover { background-color: #5a8868 !important; }
+        [data-theme="luting"] .bg-indigo-950, [data-theme="luting"] .bg-indigo-900 { background-color: #2e5038 !important; }
+        [data-theme="luting"] .text-indigo-300 { color: #b8d8b8 !important; }
+        [data-theme="luting"] .text-indigo-600 { color: #7aaa88 !important; }
+        [data-theme="luting"] .text-indigo-700 { color: #5a8868 !important; }
+        [data-theme="luting"] .text-indigo-400 { color: #A1C1A1 !important; }
+        [data-theme="luting"] .bg-indigo-50 { background-color: #e8f2ea !important; }
+        [data-theme="luting"] .bg-indigo-100 { background-color: #d4e8d8 !important; }
+        [data-theme="luting"] .hover\:bg-indigo-50:hover { background-color: #e8f2ea !important; }
+        [data-theme="luting"] .hover\:text-indigo-600:hover { color: #7aaa88 !important; }
+        [data-theme="luting"] .text-teal-700 { color: #4a7858 !important; }
+        [data-theme="luting"] .bg-teal-600 { background-color: #7aaa88 !important; }
+        [data-theme="luting"] .bg-teal-50 { background-color: #e8f2ea !important; }
+        [data-theme="luting"] .bg-emerald-600 { background-color: #7aaa88 !important; }
+        [data-theme="luting"] .hover\:bg-emerald-700:hover { background-color: #5a8868 !important; }
+        [data-theme="luting"] .bg-emerald-50 { background-color: #e4f0e6 !important; }
+        [data-theme="luting"] .text-emerald-700 { color: #4a7858 !important; }
 
-    /* 頂部導覽列 */
-    .navbar {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border-color);
-    }
+        /* ══════════════════════════════════════════════════
+           🎨 修改 Theme A：右邊第一個黑色 Theme → 手繪奶油 Duck / Planner
+        ══════════════════════════════════════════════════ */
+        [data-theme="dark"] {
+            --bg: #FFF4D8;
+            --surface: #FFFDF5;
+            --primary: #F6B73C;
+            --secondary: #F4D06F;
+            --accent: #93B96B;
+            --text: #4A3A2A;
+            --text-muted: #766451;
+            --border: #EAD9A7;
+            --shadow: 0 6px 18px rgba(122, 83, 34, 0.10);
+            --radius: 20px;
+            --header: linear-gradient(135deg, #FFE8A3, #FFF4D8, #FCE3A1);
+            --button-text: #4A3A2A;
+        }
 
-    .nav-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 72px;
-    }
+        /* ══════════════════════════════════════════════════
+           🎨 修改 Theme B：右邊數來第三個粉色 Theme → Claymorphism / Crafted with Care
+        ══════════════════════════════════════════════════ */
+        [data-theme="taozhi"] {
+            --bg: #FFF1E8;
+            --surface: #FFF8F1;
+            --primary: #F58FB0;
+            --secondary: #AB91DD;
+            --accent: #8FCF9B;
+            --peach: #F5BD8A;
+            --text: #553D45;
+            --text-muted: #806975;
+            --border: #F0D7DB;
+            --shadow: 6px 8px 20px rgba(220,150,170,0.18), -3px -3px 10px rgba(255,255,255,0.9), inset 1px 1px 2px rgba(255,255,255,0.7);
+            --radius: 22px;
+            --header: linear-gradient(130deg, #F8BDD3, #FCE7DE, #E5DAFA);
+            --button-text: #ffffff;
+        }
 
-    .brand-logo {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--bg-dark);
-      letter-spacing: -0.5px;
-    }
+        /* 針對 Theme A 與 Theme B 套用變數覆寫，確保不干擾其餘 5 組國風主題 */
+        :is([data-theme="dark"],[data-theme="taozhi"]) body {
+            background-color: var(--bg) !important;
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) header {
+            background: var(--header) !important;
+            color: var(--text) !important;
+            border-bottom: 1.5px solid var(--border) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root main,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root header,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root section {
+            color: var(--text);
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root section.sticky,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-50,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-50\/70 {
+            background-color: var(--surface) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-100,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-100\/70,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-200 {
+            background-color: color-mix(in srgb, var(--secondary) 22%, white) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white\/5,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white\/10 {
+            background-color: rgba(255, 255, 255, 0.55) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-900,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-800,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-700,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-white {
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-300,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-400,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-500,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-600 {
+            color: var(--text-muted) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-200,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-100,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-200\/80 {
+            border-color: var(--border) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-900,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-950 {
+            background: var(--primary) !important;
+            color: var(--button-text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-50,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-100 {
+            background-color: color-mix(in srgb, var(--primary) 22%, white) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-700,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-300,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-400 {
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-emerald-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-teal-600 {
+            background-color: var(--accent) !important;
+            color: #ffffff !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .rounded-2xl,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .rounded-xl {
+            border-radius: var(--radius) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .shadow-sm,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .shadow-md {
+            box-shadow: var(--shadow) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root input:not([type="checkbox"]):not([type="radio"]),
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root select,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root textarea {
+            background: var(--surface) !important;
+            color: var(--text) !important;
+            border-color: var(--border) !important;
+        }
 
-    .brand-logo span {
-      color: var(--primary);
-    }
+        /* 手繪 Duck 專屬微調 */
+        [data-theme="dark"] #campaign-grid > div {
+            border: 1.5px solid var(--border);
+            box-shadow: 0 4px 14px rgba(122, 83, 34, 0.08) !important;
+        }
+        [data-theme="dark"] .badge-duck {
+            background-color: #FEF3C7;
+            color: #4A3A2A;
+            border: 1px solid #EAD9A7;
+        }
 
-    .nav-menu {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
+        /* Claymorphism 專屬澎潤微浮起質感 */
+        [data-theme="taozhi"] #campaign-grid > div {
+            border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 6px 8px 18px rgba(220,150,170,0.18), -3px -3px 10px rgba(255,255,255,0.9), inset 1px 1px 2px rgba(255,255,255,0.7) !important;
+        }
+        [data-theme="taozhi"] #app-root .bg-indigo-600 {
+            background: linear-gradient(135deg, #F58FB0, #AB91DD) !important;
+            box-shadow: 0 4px 0 #D97A9B, 0 8px 16px rgba(220,130,165,0.28) !important;
+            color: #ffffff !important;
+        }
 
-    .nav-link {
-      font-weight: 500;
-      color: var(--text-muted);
-      transition: var(--transition);
-    }
+        /* ══════════════════════════════════════════════════
+           📱 Mobile Responsive 樣式與斷點系統
+        ══════════════════════════════════════════════════ */
+        html, body {
+            max-width: 100%;
+            overflow-x: clip;
+        }
+        #app-root, #app-root main, .global-view {
+            min-width: 0;
+        }
 
-    .nav-link:hover {
-      color: var(--primary);
-    }
+        #mobile-bottom-nav, #mobile-theme-trigger, #mobile-filter-panel { display: none; }
+        .mobile-card-overflow { display: none; }
+        #mobile-theme-panel, #mobile-more-panel, #mobile-filter-sheet { display: none; }
+        #mobile-theme-panel.is-open, #mobile-more-panel.is-open, #mobile-filter-sheet.is-open { display: block; }
+        
+        .mobile-sheet-backdrop {
+            position: fixed; inset: 0; background: rgba(30, 20, 25, 0.45); z-index: 65; backdrop-filter: blur(2px);
+        }
+        .mobile-sheet-content {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 66;
+            max-height: min(72dvh, 520px); overflow-y: auto; padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
+            background: #ffffff; color: #334155; border-radius: 24px 24px 0 0;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+        }
+        .mobile-sheet-content button { min-height: 44px; }
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: var(--transition);
-    }
+        .mobile-card-overflow-panel {
+            position: absolute; right: 0; top: 40px; z-index: 25; min-width: 150px;
+            padding: 6px; border-radius: 14px; background: #ffffff; border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        }
+        .mobile-card-overflow-panel button {
+            display: flex; align-items: center; width: 100%; padding: 10px 14px; text-align: left;
+            min-height: 44px; font-size: 14px; font-weight: 700; border-radius: 8px;
+        }
+        .mobile-card-overflow-panel button:hover { background: #f8fafc; }
 
-    .btn-primary {
-      background-color: var(--primary);
-      color: #ffffff;
-    }
+        @media (max-width: 1024px) {
+            #app-root main { padding-left: 16px; padding-right: 16px; }
+            #campaign-grid { gap: 16px; }
+        }
 
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
-
-    .btn-secondary {
-      border-color: var(--border-color);
-      background-color: transparent;
-      color: var(--text-main);
-    }
-
-    .btn-secondary:hover {
-      background-color: var(--bg-alt);
-    }
-
-    /* 主視覺 Hero 區塊 */
-    .hero {
-      padding: 100px 0 80px;
-      text-align: center;
-      background: radial-gradient(circle at center, #eff6ff 0%, #ffffff 70%);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      background-color: #dbeafe;
-      color: var(--primary);
-      font-size: 0.875rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    .hero-title {
-      font-size: 3.25rem;
-      font-weight: 800;
-      line-height: 1.2;
-      color: var(--bg-dark);
-      margin-bottom: 24px;
-      letter-spacing: -1px;
-    }
-
-    .hero-subtitle {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 680px;
-      margin: 0 auto 36px;
-    }
-
-    .hero-cta {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-    }
-
-    /* 區塊通用標題 */
-    .section-header {
-      text-align: center;
-      margin-bottom: 60px;
-    }
-
-    .section-title {
-      font-size: 2.25rem;
-      font-weight: 700;
-      color: var(--bg-dark);
-      margin-bottom: 12px;
-    }
-
-    .section-desc {
-      color: var(--text-muted);
-      font-size: 1.1rem;
-    }
-
-    /* 服務與功能卡片 */
-    .services {
-      padding: 100px 0;
-    }
-
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 32px;
-    }
-
-    .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 36px;
-      transition: var(--transition);
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow);
-      border-color: #cbd5e1;
-    }
-
-    .card-icon {
-      width: 52px;
-      height: 52px;
-      background: #eff6ff;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-      font-size: 1.5rem;
-      margin-bottom: 24px;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      color: var(--bg-dark);
-    }
-
-    .card-text {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-    }
-
-    /* 數據統計區塊 */
-    .stats {
-      background: var(--bg-alt);
-      padding: 80px 0;
-      border-top: 1px solid var(--border-color);
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 40px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 2.75rem;
-      font-weight: 800;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    /* 聯絡我們 */
-    .contact {
-      padding: 100px 0;
-    }
-
-    .contact-form {
-      max-width: 600px;
-      margin: 0 auto;
-      background: var(--bg-surface);
-      padding: 40px;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-      font-size: 0.9rem;
-    }
-
-    .form-control {
-      width: 100%;
-      padding: 12px 16px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 1rem;
-      font-family: inherit;
-      transition: var(--transition);
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-    }
-
-    textarea.form-control {
-      resize: vertical;
-      min-height: 120px;
-    }
-
-    /* 頁尾 Footer */
-    .footer {
-      background: var(--bg-dark);
-      color: #94a3b8;
-      padding: 48px 0;
-      text-align: center;
-      font-size: 0.9rem;
-    }
-
-    .footer a {
-      color: #f8fafc;
-      transition: var(--transition);
-    }
-
-    .footer a:hover {
-      color: var(--primary);
-    }
-
-    /* 行動裝置響應式調整 */
-    @media (max-width: 768px) {
-      .hero-title {
-        font-size: 2.25rem;
-      }
-
-      .nav-menu {
-        display: none; /* 行動版可擴展為摺疊式漢堡選單 */
-      }
-
-      .hero-cta {
-        flex-direction: column;
-      }
-
-      .contact-form {
-        padding: 24px;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- 導覽列 -->
-  <header class="navbar">
-    <div class="container nav-container">
-      <a href="#" class="brand-logo">Apex<span>Studio</span></a>
-      <nav class="nav-menu">
-        <a href="#services" class="nav-link">核心服務</a>
-        <a href="#stats" class="nav-link">成效數據</a>
-        <a href="#contact" class="nav-link">聯絡諮詢</a>
-        <a href="#contact" class="btn btn-primary">立即開始</a>
-      </nav>
-    </div>
-  </header>
-
-  <!-- Hero 英雄視覺區 -->
-  <section class="hero">
-    <div class="container">
-      <span class="badge">打造極致數位體驗</span>
-      <h1 class="hero-title">將您的商業願景<br>轉化為出色的數位產品</h1>
-      <p class="hero-subtitle">我們專注於現代化網站架設、使用者體驗設計與全端系統整合，協助企業在數位市場中快速建立競爭優勢。</p>
-      <div class="hero-cta">
-        <a href="#contact" class="btn btn-primary">預約專案諮詢</a>
-        <a href="#services" class="btn btn-secondary">瀏覽服務範疇</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 服務展示區 -->
-  <section class="services" id="services">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">全方位解決方案</h2>
-        <p class="section-desc">從概念原型到正式部署，提供完整的一站式技術支援</p>
-      </div>
-
-      <div class="cards-grid">
-        <div class="card">
-          <div class="card-icon">💻</div>
-          <h3 class="card-title">形象與電商網站開發</h3>
-          <p class="card-text">基於響應式設計（RWD），在手機、平板與桌機上均能呈現流暢且一致的視覺與互動表現。</p>
-        </div>
-
-        <div class="card">
-          <div class="card-icon">⚡</div>
-          <h3 class="card-title">效能最佳化與 SEO</h3>
-          <p class="card-text">透過精簡架構與語意化標籤，確保網站載入速度達到極致，提升在搜尋引擎上的自然排名。</p>
-        </div>
-
-        <div class="card">
-          <div class="card-icon">🛡️</div>
-          <h3 class="card-title">客製化後台系統整合</h3>
-          <p class="card-text">量身打造直覺的資料管理介面與 API 介接，簡化日常營運流程並提高團隊工作效率。</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 數據展示區 -->
-  <section class="stats" id="stats">
-    <div class="container">
-      <div class="stats-grid">
-        <div>
-          <div class="stat-number">99.8%</div>
-          <div class="stat-label">客戶滿意度</div>
-        </div>
-        <div>
-          <div class="stat-number">120+</div>
-          <div class="stat-label">成功上線專案</div>
-        </div>
-        <div>
-          <div class="stat-number">3.5x</div>
-          <div class="stat-label">平均轉換率成長</div>
-        </div>
-        <div>
-          <div class="stat-number">24/7</div>
-          <div class="stat-label">專業技術維護</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 聯絡表單 -->
-  <section class="contact" id="contact">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">開始您的專案</h2>
-        <p class="section-desc">請填寫基本需求，我們將在 24 小時內與您聯繫討論細節。</p>
-      </div>
-
-      <form class="contact-form" id="leadForm">
-        <div class="form-group">
-          <label for="name">姓名 / 負責人稱呼</label>
-          <input type="text" id="name" class="form-control" placeholder="例如：陳先生" required>
-        </div>
-
-        <div class="form-group">
-          <label for="email">電子郵件信箱</label>
-          <input type="email" id="email" class="form-control" placeholder="name@company.com" required>
+        /* 手機斷點 (< 768px) */
+        @media (max-width: 767px) {
+            body, #app-root { max-width: 100vw; }
+            
+            /* Compact Mobile Header */
+            #app-root > header {
+                min-height: 125px;
+                max-height: 160px;
+                overflow: visible;
+                padding-bottom: 8px;
+            }
+            #app-root > header .header-top-row {
+                height: 48px;
+                justify-content: space-between;
+                gap: 8px;
+                padding-top: 6px;
+                padding-bottom: 6px;
+            }
+            #app-root > header .header-banner-row {
+                padding-top: 4px;
+                padding-bottom: 8px;
+            }
+            #app-root > header .header-banner-row .tracking-wider,
+            #app-root > header .header-banner-row p {
+                display: none;
+            }
+            #app-root > header h1 {
+                font-size: 24px !important;
+                line-height: 1.25;
+                margin-top: 0;
+            }
+            #app-root > header .header-banner-row .stats-wrap {
+                gap: 8px;
+            }
+            #app-root > header .header-banner-row .stat-box {
+                min-width: 0;
+                padding: 4px 10px;
+                border: 0;
+                background: rgba(255, 255, 255, 0.12);
+            }
+            #app-root > header .header-banner-row .stat-box .text-xl {
+                font-size: 16px;
+            }
+            #app-root > header .header-banner-row .stat-box span {
+                font-size: 12px;
+            }
+            #app-root > header .theme-desktop-picker {
+                display: none !important;
+            }
+            #mobile-theme-trigger {
+                display: inline-flex; align-items: center; justify-content: center;
+   class="form-control" placeholder="name@company.com" required>
         </div>
 
         <div class="form-group">

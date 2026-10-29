@@ -492,7 +492,125 @@
             :is([data-theme="dark"],[data-theme="taozhi"]) #app-root button { transition:none!important; }
         }
 
-    </style>
+    
+/* Planner OS 視覺精修 v2
+   僅作用於 dark（奶油手帳）與 taozhi（粉彩軟陶）。
+   保留其他五款主題、資料結構及所有事件處理。 */
+html[data-theme="dark"],html[data-theme="taozhi"] {
+  --planner-card-gap:18px;
+}
+html[data-theme="dark"] {
+  --bg:#fff4d7; --surface:#fffdf3; --primary:#f7bd47;
+  --text:#4a3527; --text-muted:#876f54; --border:#e9cf98;
+  --shadow:0 5px 0 #f1dca8,0 14px 30px #aa77301c;
+}
+html[data-theme="taozhi"] {
+  --bg:#fff0f4; --surface:#fff7fa; --primary:#f58fb0;
+  --text:#553d45; --text-muted:#90717e; --border:#f5d3e1;
+  --shadow:0 7px 0 #eab2ce,0 19px 35px #bb719c35,inset 0 2px 2px #fff;
+}
+/* 原先深色主題殘留的深藍色樣式在此主題限定覆蓋。 */
+html[data-theme="dark"] #app-root,
+html[data-theme="taozhi"] #app-root { color:var(--text); }
+html[data-theme="dark"] #app-root > header,
+html[data-theme="taozhi"] #app-root > header {
+  min-height:205px;
+  border-bottom:0!important;
+  box-shadow:0 8px 24px #7b56301a!important;
+}
+html[data-theme="dark"] #app-root > header {
+  background:radial-gradient(circle at 80% 35%,#fff9e4 0 15%,transparent 43%),linear-gradient(135deg,#ffe3a2,#fff3cc 65%,#ffdc8d)!important;
+}
+html[data-theme="taozhi"] #app-root > header {
+  background:radial-gradient(circle at 78% 35%,#fff8fd 0 12%,transparent 43%),linear-gradient(115deg,#ffdbeb,#f9d8ed 58%,#e9ddff)!important;
+}
+/* 手帳主題：柔和便條紙、局部手繪邊緣及紙質陰影。 */
+html[data-theme="dark"] #campaign-grid > div {
+  background:linear-gradient(170deg,#fffefa,#fff9e9)!important;
+  border:2px solid #e8bd67!important;
+  border-radius:17px 23px 19px 24px!important;
+  box-shadow:2px 5px 0 #f2d48b,0 13px 24px #a47a3728!important;
+  outline:1px solid #fff8e2;
+  outline-offset:-7px;
+  transform:rotate(-.25deg);
+}
+html[data-theme="dark"] #campaign-grid > div:nth-child(2n) { transform:rotate(.3deg); }
+html[data-theme="dark"] #campaign-grid > div:hover { transform:translateY(-4px) rotate(0); }
+html[data-theme="dark"] #campaign-grid > div::before {
+  content:"";position:absolute;top:-10px;left:27px;width:64px;height:19px;
+  background:repeating-linear-gradient(120deg,#f5d28b99 0 8px,#ffe5b8aa 8px 16px);
+  border:1px solid #e5bd7e80;border-radius:3px;
+  transform:rotate(-7deg);box-shadow:0 2px 4px #b58b4430;pointer-events:none;
+}
+html[data-theme="dark"] #campaign-grid > div::after {
+  content:"✦";position:absolute;right:12px;top:-15px;font-size:25px;color:#e6ac35;
+  text-shadow:1px 2px #fff8e2;pointer-events:none;
+}
+/* 軟陶主題：明確的浮雕外緣、內高光與多層深度。 */
+html[data-theme="taozhi"] #campaign-grid > div {
+  background:linear-gradient(145deg,#fffafd 0%,#ffeaf3 72%,#f9e2ef 100%)!important;
+  border:2px solid #ffe8f3!important;border-radius:25px!important;
+  box-shadow:-4px -4px 10px #ffffffd9,5px 7px 0 #eeb4d1,10px 17px 28px #b976a54d,inset 2px 3px 3px #fff!important;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+html[data-theme="taozhi"] #campaign-grid > div:hover {
+  transform:translateY(-4px);
+  box-shadow:-4px -4px 10px #fff,6px 10px 0 #eeb4d1,12px 22px 32px #b976a54d,inset 2px 3px 3px #fff!important;
+}
+html[data-theme="taozhi"] #campaign-grid > div::before {
+  content:"";position:absolute;inset:5px;border:1px solid #ffffffb8;border-radius:21px;
+  background:none;transform:none;box-shadow:none;pointer-events:none;
+}
+html[data-theme="taozhi"] #campaign-grid > div::after {
+  content:"✿";position:absolute;right:12px;top:-20px;font-size:27px;color:#f69dc4;
+  text-shadow:1px 2px #fff,3px 5px 0 #d985b4,6px 9px 12px #ad6a9555;
+  pointer-events:none;
+}
+/* 保留所有卡片文字與既有操作，提升進度條的視覺層次。 */
+html[data-theme="dark"] #campaign-grid .rounded-full > div {
+  background:linear-gradient(#bfe49b,#8bbf64)!important;
+  box-shadow:inset 0 2px 2px #fff9,0 2px 0 #6e9c50!important;
+}
+html[data-theme="taozhi"] #campaign-grid .rounded-full > div {
+  background:linear-gradient(#ffd8e9,#f58ab5 62%,#e26da1)!important;
+  box-shadow:inset 0 2px 2px #fff9,0 2px 0 #ce70a1!important;
+}
+html[data-theme="taozhi"] #app-root button.bg-indigo-600,
+html[data-theme="taozhi"] #app-root .bg-indigo-600 {
+  background:linear-gradient(155deg,#ffbad6,#f58bb6 65%,#d977ad)!important;
+  box-shadow:inset 0 2px 2px #fff8,0 4px 0 #d979a9,0 10px 18px #b8749a4d!important;
+  border:1px solid #ffc9df!important;
+}
+html[data-theme="dark"] #app-root button.bg-indigo-600,
+html[data-theme="dark"] #app-root .bg-indigo-600 {
+  background:linear-gradient(#ffda78,#f8b936)!important;
+  box-shadow:inset 0 2px 2px #fff9,0 4px 0 #d99624,0 9px 15px #b17d2b42!important;
+  border:1px solid #ffdb84!important;
+}
+/* 重要：手機版的單欄卡片與固定導覽以 CSS 覆寫明確強制生效。 */
+@media screen and (max-width:767px) {
+  html[data-theme="dark"] #app-root > header,
+  html[data-theme="taozhi"] #app-root > header { min-height:0!important;max-height:none!important; }
+  #campaign-grid { display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:17px!important; }
+  #campaign-grid > div { min-width:0!important;width:100%!important;transform:none!important; }
+  #app-root > section.sticky {display:none!important;}
+  #mobile-bottom-nav {display:grid!important;}
+  #mobile-filter-panel {display:grid!important;}
+  .dashboard-filter-chips {display:none!important;}
+  html[data-theme="dark"] #campaign-grid > div,
+  html[data-theme="taozhi"] #campaign-grid > div {padding:17px!important;}
+  #campaign-grid h3 {font-size:16px!important;line-height:1.45!important;overflow-wrap:anywhere;}
+  #app-root main {padding:16px 16px calc(120px + env(safe-area-inset-bottom))!important;}
+  #app-root {overflow-x:clip;}
+  .mobile-card-overflow {display:block!important;}
+  .desktop-card-actions {display:none!important;}
+}
+@media (prefers-reduced-motion:reduce) {
+  html[data-theme="dark"] #campaign-grid > div,
+  html[data-theme="taozhi"] #campaign-grid > div {transition:none!important;}
+}
+
+</style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
 

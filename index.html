@@ -363,6 +363,212 @@
             }
             #mobile-theme-trigger {
                 display: inline-flex; align-items: center; justify-content: center;
+  20px rgba(220,150,170,0.18), -3px -3px 10px rgba(255,255,255,0.9), inset 1px 1px 2px rgba(255,255,255,0.7);
+            --radius: 22px;
+            --header: linear-gradient(130deg, #F8BDD3, #FCE7DE, #E5DAFA);
+            --button-text: #ffffff;
+        }
+
+        /* 針對 Theme A 與 Theme B 套用變數覆寫，確保不干擾其餘 5 組國風主題 */
+        :is([data-theme="dark"],[data-theme="taozhi"]) body {
+            background-color: var(--bg) !important;
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) header {
+            background: var(--header) !important;
+            color: var(--text) !important;
+            border-bottom: 1.5px solid var(--border) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root main,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root header,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root section {
+            color: var(--text);
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root section.sticky,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-50,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-50\/70 {
+            background-color: var(--surface) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-100,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-100\/70,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-slate-200 {
+            background-color: color-mix(in srgb, var(--secondary) 22%, white) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white\/5,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-white\/10 {
+            background-color: rgba(255, 255, 255, 0.55) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-900,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-800,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-700,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-white {
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-300,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-400,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-500,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-slate-600 {
+            color: var(--text-muted) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-200,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-100,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .border-slate-200\/80 {
+            border-color: var(--border) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-900,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-950 {
+            background: var(--primary) !important;
+            color: var(--button-text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-50,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-indigo-100 {
+            background-color: color-mix(in srgb, var(--primary) 22%, white) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-700,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-300,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .text-indigo-400 {
+            color: var(--text) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-emerald-600,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .bg-teal-600 {
+            background-color: var(--accent) !important;
+            color: #ffffff !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .rounded-2xl,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .rounded-xl {
+            border-radius: var(--radius) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .shadow-sm,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root .shadow-md {
+            box-shadow: var(--shadow) !important;
+        }
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root input:not([type="checkbox"]):not([type="radio"]),
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root select,
+        :is([data-theme="dark"],[data-theme="taozhi"]) #app-root textarea {
+            background: var(--surface) !important;
+            color: var(--text) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* 手繪 Duck 專屬微調 */
+        [data-theme="dark"] #campaign-grid > div {
+            border: 1.5px solid var(--border);
+            box-shadow: 0 4px 14px rgba(122, 83, 34, 0.08) !important;
+        }
+        [data-theme="dark"] .badge-duck {
+            background-color: #FEF3C7;
+            color: #4A3A2A;
+            border: 1px solid #EAD9A7;
+        }
+
+        /* Claymorphism 專屬澎潤微浮起質感 */
+        [data-theme="taozhi"] #campaign-grid > div {
+            border: 1.5px solid rgba(255, 255, 255, 0.8) !important;
+            box-shadow: 6px 8px 18px rgba(220,150,170,0.18), -3px -3px 10px rgba(255,255,255,0.9), inset 1px 1px 2px rgba(255,255,255,0.7) !important;
+        }
+        [data-theme="taozhi"] #app-root .bg-indigo-600 {
+            background: linear-gradient(135deg, #F58FB0, #AB91DD) !important;
+            box-shadow: 0 4px 0 #D97A9B, 0 8px 16px rgba(220,130,165,0.28) !important;
+            color: #ffffff !important;
+        }
+
+        /* ══════════════════════════════════════════════════
+           📱 Mobile Responsive 樣式與斷點系統
+        ══════════════════════════════════════════════════ */
+        html, body {
+            max-width: 100%;
+            overflow-x: clip;
+        }
+        #app-root, #app-root main, .global-view {
+            min-width: 0;
+        }
+
+        #mobile-bottom-nav, #mobile-theme-trigger, #mobile-filter-panel { display: none; }
+        .mobile-card-overflow { display: none; }
+        #mobile-theme-panel, #mobile-more-panel, #mobile-filter-sheet { display: none; }
+        #mobile-theme-panel.is-open, #mobile-more-panel.is-open, #mobile-filter-sheet.is-open { display: block; }
+        
+        .mobile-sheet-backdrop {
+            position: fixed; inset: 0; background: rgba(30, 20, 25, 0.45); z-index: 65; backdrop-filter: blur(2px);
+        }
+        .mobile-sheet-content {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 66;
+            max-height: min(72dvh, 520px); overflow-y: auto; padding: 20px 18px calc(24px + env(safe-area-inset-bottom));
+            background: #ffffff; color: #334155; border-radius: 24px 24px 0 0;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.15);
+        }
+        .mobile-sheet-content button { min-height: 44px; }
+
+        .mobile-card-overflow-panel {
+            position: absolute; right: 0; top: 40px; z-index: 25; min-width: 150px;
+            padding: 6px; border-radius: 14px; background: #ffffff; border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+        }
+        .mobile-card-overflow-panel button {
+            display: flex; align-items: center; width: 100%; padding: 10px 14px; text-align: left;
+            min-height: 44px; font-size: 14px; font-weight: 700; border-radius: 8px;
+        }
+        .mobile-card-overflow-panel button:hover { background: #f8fafc; }
+
+        @media (max-width: 1024px) {
+            #app-root main { padding-left: 16px; padding-right: 16px; }
+            #campaign-grid { gap: 16px; }
+        }
+
+        /* 手機斷點 (< 768px) */
+        @media (max-width: 767px) {
+            body, #app-root { max-width: 100vw; }
+            
+            /* Compact Mobile Header */
+            #app-root > header {
+                min-height: 125px;
+                max-height: 160px;
+                overflow: visible;
+                padding-bottom: 8px;
+            }
+            #app-root > header .header-top-row {
+                height: 48px;
+                justify-content: space-between;
+                gap: 8px;
+                padding-top: 6px;
+                padding-bottom: 6px;
+            }
+            #app-root > header .header-banner-row {
+                padding-top: 4px;
+                padding-bottom: 8px;
+            }
+            #app-root > header .header-banner-row .tracking-wider,
+            #app-root > header .header-banner-row p {
+                display: none;
+            }
+            #app-root > header h1 {
+                font-size: 24px !important;
+                line-height: 1.25;
+                margin-top: 0;
+            }
+            #app-root > header .header-banner-row .stats-wrap {
+                gap: 8px;
+            }
+            #app-root > header .header-banner-row .stat-box {
+                min-width: 0;
+                padding: 4px 10px;
+                border: 0;
+                background: rgba(255, 255, 255, 0.12);
+            }
+            #app-root > header .header-banner-row .stat-box .text-xl {
+                font-size: 16px;
+            }
+            #app-root > header .header-banner-row .stat-box span {
+                font-size: 12px;
+            }
+            #app-root > header .theme-desktop-picker {
+                display: none !important;
+            }
+            #mobile-theme-trigger {
+                display: inline-flex; align-items: center; justify-content: center;
    class="form-control" placeholder="name@company.com" required>
         </div>
 

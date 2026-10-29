@@ -610,6 +610,137 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
   html[data-theme="taozhi"] #campaign-grid > div {transition:none!important;}
 }
 
+
+/* Planner OS v3：視覺稿元件重構。保留所有既有事件與資料綁定。 */
+.planner-card-decoration { display:none; }
+.planner-progress-percent { display:none; }
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-project-card {
+  position:relative; isolation:isolate; overflow:visible;
+  min-height:225px; padding:24px!important;
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-card-decoration {
+  display:block; position:absolute; inset:0; pointer-events:none; z-index:0;
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-card-content,
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-project-card > .project-card-footer {
+  position:relative; z-index:1;
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-progress-percent {
+  display:inline; font-size:16px; font-weight:900; color:var(--text);
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-progress-track {
+  height:13px!important; border-radius:99px; border:1px solid #ffffffc9;
+  background:#eaded088!important; box-shadow:inset 0 2px 4px #5c395126;
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-progress-fill {
+  height:100%; border-radius:99px; position:relative;
+}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-progress-fill::after {
+  content:"";position:absolute;left:7px;right:7px;top:2px;height:3px;
+  border-radius:99px;background:#ffffffb0;
+}
+[data-theme="dark"] .planner-project-card {
+  border:2px solid #e9bd63!important;
+  border-radius:20px 25px 19px 23px!important;
+  background:repeating-linear-gradient(0deg,transparent 0 28px,#e7c99015 29px 30px),#fffdf1!important;
+  box-shadow:3px 6px 0 #e9cb82,0 18px 27px #a477342c!important;
+}
+[data-theme="dark"] .planner-card-decoration::before {
+  content:"";position:absolute;top:-11px;left:23px;width:79px;height:23px;
+  background:repeating-linear-gradient(120deg,#e9c279aa 0 10px,#ffe2a4cc 10px 20px);
+  transform:rotate(-8deg);border-radius:4px;box-shadow:0 2px 4px #8c602c25;
+}
+[data-theme="dark"] .planner-card-doodle {
+  position:absolute;right:13px;top:-23px;font-size:29px;color:#eeb43f;
+  filter:drop-shadow(1px 2px 0 #fff);
+}
+[data-theme="dark"] .planner-card-sticker {
+  position:absolute;right:14px;bottom:18px;font-size:20px;color:#a1bb74;
+  transform:rotate(15deg);
+}
+[data-theme="taozhi"] .planner-project-card {
+  border:2px solid #fff4fb!important;border-radius:29px!important;
+  background:linear-gradient(155deg,#fffaff,#ffeaf4 72%,#f7d9e9)!important;
+  box-shadow:inset 2px 3px 4px #fff,5px 8px 0 #e7a6c8,12px 22px 30px #b16d9b52!important;
+}
+[data-theme="taozhi"] .planner-card-decoration::before {
+  content:"";position:absolute;inset:5px;border-radius:24px;
+  border:1.5px solid #ffffffb5;
+}
+[data-theme="taozhi"] .planner-card-sticker {
+  position:absolute;right:12px;top:-27px;font-size:31px;color:#f69ac5;
+  text-shadow:0 2px #fff,3px 5px #d27fae,5px 8px 12px #ae679a55;
+}
+[data-theme="taozhi"] .planner-card-doodle {
+  position:absolute;left:16px;bottom:14px;font-size:18px;color:#f8bfdc;
+}
+[data-theme="dark"] .planner-progress-fill {
+  background:linear-gradient(#d6ed9f,#92c65f 65%,#72a64b)!important;
+}
+[data-theme="taozhi"] .planner-progress-fill {
+  background:linear-gradient(#ffd7eb,#f68fb9 65%,#d86a9c)!important;
+}
+@media(max-width:767px) {
+  :is([data-theme="dark"],[data-theme="taozhi"]) .planner-project-card {
+    min-height:215px;padding:20px!important;
+  }
+  :is([data-theme="dark"],[data-theme="taozhi"]) .planner-card-decoration .planner-card-sticker {
+    right:18px;
+  }
+  #campaign-grid {grid-template-columns:minmax(0,1fr)!important;}
+  #campaign-grid > * {min-width:0!important;}
+}
+
+
+/* Planner OS 最終視覺系統：此區只影響兩款指定主題。 */
+html[data-theme="dark"],html[data-theme="taozhi"]{--ui-font:'Noto Sans TC',sans-serif;--ui-ink:#49372e;--ui-paper:#fffdf7;--ui-corner:25px}
+html[data-theme="dark"]{--ui-accent:#f4b73f;--ui-deep:#a87323;--ui-tint:#fff0bf;--ui-ink:#493724}
+html[data-theme="taozhi"]{--ui-accent:#f48fb8;--ui-deep:#b45c8e;--ui-tint:#ffe2f0;--ui-ink:#563e4b}
+:is([data-theme="dark"],[data-theme="taozhi"]) body{font-family:var(--ui-font);color:var(--ui-ink)}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero{position:relative;isolation:isolate;overflow:hidden;min-height:260px!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero::before{content:"";position:absolute;right:17%;top:36%;width:180px;height:180px;border-radius:50%;z-index:-1;opacity:.78}
+[data-theme="dark"] .planner-hero::before{background:radial-gradient(circle at 35% 30%,#fff 0 12%,#ffe7a1 13% 65%,#f4c768 66% 100%);box-shadow:inset -12px -14px 0 #e5b55766,0 13px 25px #ad81353d}
+[data-theme="taozhi"] .planner-hero::before{background:radial-gradient(circle at 30% 25%,#fff 0 13%,#ffd6e9 14% 62%,#ee9fc6 63%);box-shadow:inset -15px -14px 0 #e88db855,0 18px 30px #ae67944b}
+:is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero::after{content:"✦  ✿  ✦";position:absolute;right:8%;bottom:15px;font-size:40px;letter-spacing:26px;opacity:.65;pointer-events:none}
+[data-theme="dark"] .planner-hero::after{color:#c38e31}
+[data-theme="taozhi"] .planner-hero::after{color:#ed7fb1;text-shadow:2px 3px #fff,4px 6px #c57da2}
+/* 專案卡片：增強紙張／軟陶造型，同時不干擾可點擊區域。 */
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid{gap:22px!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card{position:relative;min-height:238px;padding:25px!important;transition:transform .2s,box-shadow .2s;cursor:pointer}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card h3{font-size:18px!important;line-height:1.45!important;color:var(--ui-ink)!important;letter-spacing:.01em;overflow-wrap:anywhere}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .planner-progress-heading{margin-top:20px!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .project-card-footer{margin-top:22px!important;padding-top:15px!important;border-color:#a77a5433!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .planner-card-decoration{display:block;position:absolute;inset:0;z-index:0;pointer-events:none}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .planner-card-content{position:relative;z-index:1}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .planner-progress-track{height:14px!important;margin-top:12px!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card .planner-progress-percent{display:block!important}
+[data-theme="dark"] #campaign-grid .planner-project-card{background:repeating-linear-gradient(0deg,#ffffff00 0 27px,#dfc38c1c 28px 29px),linear-gradient(135deg,#fffefa,#fff9e7)!important;border:2px solid #dcb66c!important;border-radius:18px 26px 21px 23px!important;box-shadow:3px 5px 0 #ebcb82,7px 13px 0 #f6e6bc,12px 24px 32px #94703b2c!important}
+[data-theme="dark"] #campaign-grid .planner-project-card:nth-child(3n+2){transform:rotate(.35deg)}
+[data-theme="dark"] #campaign-grid .planner-project-card:nth-child(3n+3){transform:rotate(-.35deg)}
+[data-theme="dark"] #campaign-grid .planner-project-card:hover{transform:translateY(-5px) rotate(0)}
+[data-theme="dark"] #campaign-grid .planner-project-card .planner-card-mascot{position:absolute;right:18px;bottom:42px;border:3px solid #c38a3a;border-radius:45% 48% 46% 50%;background:#fff9e7;padding:5px 8px;color:#9a6c35;font-size:12px;transform:rotate(-8deg)}
+[data-theme="dark"] #campaign-grid .planner-project-card .planner-card-mascot::after{content:"";position:absolute;bottom:-6px;right:5px;width:10px;height:10px;background:#eeb44a;border-radius:50%}
+[data-theme="taozhi"] #campaign-grid .planner-project-card{background:linear-gradient(145deg,#fffaff 5%,#ffebf4 72%,#f9d8ea)!important;border:2px solid #fff5fa!important;border-radius:30px!important;box-shadow:inset 3px 4px 5px #ffffff,0 7px 0 #edb2d0,0 13px 0 #e6a4c6,11px 25px 34px #ae729d52!important}
+[data-theme="taozhi"] #campaign-grid .planner-project-card:hover{transform:translateY(-5px);box-shadow:inset 3px 4px 5px #fff,0 11px 0 #edb2d0,0 17px 0 #e6a4c6,13px 29px 36px #ae729d52!important}
+[data-theme="taozhi"] #campaign-grid .planner-project-card .planner-card-mascot{position:absolute;right:18px;bottom:45px;width:45px;height:45px;border-radius:50%;background:radial-gradient(circle at 32% 25%,#fff 0 8%,#ffd2e8 25%,#f39bc5 76%,#d77fae 100%);box-shadow:inset -4px -5px 5px #b863924a,2px 5px 0 #d680ae,5px 10px 12px #aa6d9444;color:#8f5275;font-size:11px;display:flex;align-items:center;justify-content:center}
+/* 主題專屬的膨潤式控制項和卡片。 */
+[data-theme="taozhi"] button.bg-indigo-600,[data-theme="taozhi"] .bg-indigo-600{background:linear-gradient(160deg,#ffd3e7,#f48cb8 65%,#d876a9)!important;box-shadow:inset 0 3px 3px #fff9,0 5px 0 #cf78a8,0 12px 18px #b8769a50!important;border:1px solid #ffdbec!important}
+[data-theme="dark"] button.bg-indigo-600,[data-theme="dark"] .bg-indigo-600{background:linear-gradient(#ffe59a,#f6b63b)!important;box-shadow:inset 0 3px 3px #fff9,0 5px 0 #c88c2b,0 12px 18px #a87b3544!important;border:1px solid #ffe1a0!important}
+:is([data-theme="dark"],[data-theme="taozhi"]) button:active{transform:translateY(2px)}
+/* 響應式：固定實際 CSS viewport 下的手機單欄。 */
+@media(max-width:767px){
+ :is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero{min-height:0!important;max-height:none!important}
+ :is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero::before{width:94px;height:94px;right:10%;top:24%}
+ :is([data-theme="dark"],[data-theme="taozhi"]) .planner-hero::after{font-size:22px;right:4%;letter-spacing:8px}
+ #campaign-grid{grid-template-columns:minmax(0,1fr)!important;display:grid!important;gap:20px!important}
+ #campaign-grid > *{width:100%!important;min-width:0!important}
+ :is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card{min-height:220px;padding:20px!important}
+ :is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card h3{font-size:17px!important}
+ #mobile-bottom-nav{display:grid!important}
+ #app-root{overflow-x:clip}
+}
+@media(prefers-reduced-motion:reduce){:is([data-theme="dark"],[data-theme="taozhi"]) #campaign-grid .planner-project-card{transition:none!important}}
+
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
@@ -620,7 +751,7 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
 
     <div id="app-root" class="hidden flex flex-col justify-between min-h-screen w-full">
 
-    <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white shadow-lg border-b border-indigo-500/20">
+    <header class="planner-hero bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 text-white shadow-lg border-b border-indigo-500/20">
         <div class="max-w-7xl mx-auto px-4 py-3 w-full flex items-center justify-end gap-3 text-xs">
             <div class="theme-desktop-picker flex items-center gap-1 bg-white/10 rounded-lg px-2 py-1.5" title="切換介面主題">
                 <button onclick="setTheme('default')" id="tb-default" title="深藍（預設）" class="theme-dot w-4 h-4 rounded-full border-2" style="background:linear-gradient(135deg,#312e81,#1e1b4b);border-color:transparent"></button>
@@ -713,7 +844,7 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaign-grid"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="campaign-grid" aria-label="專案清單"></div>
         </div>
 
         <div id="view-calendarview" class="global-view hidden space-y-6">
@@ -2610,7 +2741,7 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
                 else if (camp.launchDate) { launchText = `🚀 上線日：${formatDateStringWithDay(camp.launchDate)}`; launchBadgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'; }
 
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border transition-all cursor-pointer flex flex-col justify-between min-h-[200px] ${hasOverdue?'border-rose-300 bg-rose-50/10 hover:border-rose-400': 'border-slate-200/80 hover:border-indigo-200'}`;
+                card.className = `planner-project-card bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border transition-all cursor-pointer flex flex-col justify-between min-h-[200px] ${hasOverdue?'border-rose-300 bg-rose-50/10 hover:border-rose-400': 'border-slate-200/80 hover:border-indigo-200'}`;
                 
                 if (isArchived) {
                     card.classList.add('opacity-60');
@@ -2637,7 +2768,11 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
                     : '<span class="project-card-main-action text-indigo-600">管理細項面板 ➔</span>';
 
                 card.innerHTML = `
-                    <div>
+                    <div class="planner-card-decoration" aria-hidden="true">
+                        <span class="planner-card-doodle">✦</span>
+                        <span class="planner-card-sticker">✿</span><span class="planner-card-mascot">◕ᴗ◕</span>
+                    </div>
+                    <div class="planner-card-content">
                         <div class="flex justify-between items-start gap-2 mb-2">
                             <div class="flex items-center gap-2 min-w-0">
                                 <span class="w-2.5 h-2.5 rounded-sm shrink-0 ${getBrandColor(getBrandFromCampaignName(camp.name)).dot||'bg-indigo-500'}"></span>
@@ -2647,11 +2782,12 @@ html[data-theme="dark"] #app-root .bg-indigo-600 {
                             ${mobileActionsHtml}
                         </div>
                         <div class="my-2.5"><span class="project-card-launch text-xs font-bold px-2 py-1 rounded-md ${launchBadgeClass}">${launchText}</span></div>
-                        <div class="mt-2 flex items-center justify-between">
+                        <div class="mt-2 flex items-center justify-between planner-progress-heading">
                             <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">📊 工作進度: ${done}/${total}</span>
+                            <strong class="planner-progress-percent">${pct}%</strong>
                             ${hasOverdue ? '<span class="bg-rose-600 text-white text-[10px] font-black px-2 py-0.5 rounded animate-pulse shrink-0">⚠️ 有事項逾期未完</span>' : ''}
                         </div>
-                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2"><div class="h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div></div>
+                        <div class="planner-progress-track w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2"><div class="planner-progress-fill h-full rounded-full ${hasOverdue?'bg-rose-500':'bg-indigo-600'}" style="width: ${pct}%"></div></div>
                     </div>
                     <div class="project-card-footer border-t border-slate-100 pt-3 flex justify-between items-center text-[10px] text-slate-400 font-bold mt-4">
                         <span>🏷️ 客戶: ${escapeHTML(getBrandFromCampaignName(camp.name))}</span>
